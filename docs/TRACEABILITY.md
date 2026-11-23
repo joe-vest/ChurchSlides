@@ -27,9 +27,9 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | LIB-012 | COULD | backlog | todo |
 | CAT-001 | MUST | C2.4 | todo |
 | CAT-002 | MUST | C2.4 | todo |
-| CAT-003 | MUST | C1.4 | todo |
-| CAT-004 | SHOULD | C1.4 | todo |
-| CAT-005 | MUST | C1.4 | todo |
+| CAT-003 | MUST | C1.4 | done (C1.4b, storage level; UI in C2.4) |
+| CAT-004 | SHOULD | C1.4 | done (C1.4b, storage level; UI in C2.4) |
+| CAT-005 | MUST | C1.4 | done (C1.4b, storage level; UI in C2.4) |
 | CAT-006 | MUST | C2.4 | todo |
 | CAT-007 | MUST | C2.4 | todo |
 | CAT-008 | COULD | backlog | todo |

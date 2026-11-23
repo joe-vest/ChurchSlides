@@ -82,7 +82,7 @@ A modular monolith. One process, a handful of assemblies with strict dependency 
 | `Remote` | Kestrel host, embedded web page, SSE broadcaster, token and IP filter | REM |
 | `App` | Views and view-models, editors, cue editor, settings, `OutputWindow`, hotkeys, crash handling | UI, SAFE-006 |
 
-`ILibrary` lives in `Storage` (the dependency rule has Engine reference Storage), so Engine tests fake it from there. `Engine` talks to the rest of the outside world only through interfaces it owns: `IAudioPlayer`, `IClock`, `IOutputSurface`, `IRemoteHost`. That makes it testable with fakes (fake clock for timers, fake audio for cues) and keeps the FRD's FUT-004 "single command API" honest.
+`ILibrary` lives in `Storage` (the dependency rule has Engine reference Storage), so Engine tests fake it from there. `Engine` talks to the rest of the outside world only through interfaces it owns: `IAudioPlayer`, `IClock` (defined in `Domain`, shared with `Storage`), `IOutputSurface`, `IRemoteHost`. That makes it testable with fakes (fake clock for timers, fake audio for cues) and keeps the FRD's FUT-004 "single command API" honest.
 
 ---
 
@@ -346,7 +346,7 @@ last-session.json    last service + slide, for crash recovery (SAFE-005)
 
 ### 9.2 Search (CAT)
 
-- In-memory index built from all Shows at startup (from a cached snapshot, then incrementally corrected by the watcher). Each entry holds a normalised (lowercase, accent-stripped) title, optional CCLI number, and slide text.
+- In-memory index built from all Shows at startup on a background thread, then incrementally corrected by the watcher. No snapshot file until startup is measured to be slow (C1.4 decision 10). Each entry holds a normalised (lowercase, accent-stripped) title, optional CCLI number, and slide text.
 - Search-as-you-type is a linear scan over a few thousand short strings. That runs in a millisecond or two, with no need for an inverted index. Title hits rank above lyric hits (CAT-004).
 - One `ICatalogSearch` is used by the Catalog, "add to Service", and "fill Placeholder" (CAT-006), the last with Category/Kind filters pre-applied.
 - Memory: lyrics for 2,000 Songs is only a few MB.

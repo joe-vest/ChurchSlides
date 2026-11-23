@@ -1,7 +1,7 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C1.4a done)
+Last updated: 2026-11-23 (C1.4b done)
 
 ## Chunks
 
@@ -16,7 +16,7 @@ Last updated: 2026-11-23 (C1.4a done)
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
 | C1.3c | Model and storage changes from the document review | done: C1.3c-1 domain, C1.3c-2 storage (313 domain, 86 storage tests, see docs/plans/C1.3c.md) |
-| C1.4 | Library watching and search | C1.4a watching done (114 storage tests); C1.4b search next (docs/plans/C1.4.md) |
+| C1.4 | Library watching and search | done: C1.4a watching, C1.4b search (131 storage tests, see docs/plans/C1.4.md) |
 | C1.5 | Navigation engine (review gate) | todo |
 | C2.1 | Slide renderer and image pipeline | todo |
 | C2.2 | Output window and operator shell (G1) | todo |
