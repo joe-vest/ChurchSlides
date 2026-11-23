@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     private readonly FrameCounter frames = new();
     private readonly DispatcherTimer readout;
     private readonly RenderThread renderThread = new();
+    private readonly RichTextPanel richText = new();
     private OutputTestWindow? pattern;
     private SlideSession? slides;
     private bool testRunning;
@@ -30,6 +31,12 @@ public partial class MainWindow : Window
         OutputPanel.Children.Add(new ChecklistPanel(results, Results.S1));
         SlidesPanel.Children.Add(new ChecklistPanel(results, Results.S2));
         StartupPanel.Children.Add(new ChecklistPanel(results, Results.S7));
+        RichTextTab.Content = richText;
+        richText.RunButton.Click += async (_, _) =>
+        {
+            await RunRichText();
+            TrySave();
+        };
         FitBox.ItemsSource = Enum.GetValues<FitMode>();
         FitBox.SelectedItem = FitMode.Fill;
         ShowMediaFolder();
@@ -72,6 +79,14 @@ public partial class MainWindow : Window
 
         if (Startup.AutoRequested)
             _ = RunAutoThenClose();
+        else if (Startup.AutoS3Requested)
+            _ = RunRichTextThenClose();
+    }
+
+    private async Task RunRichTextThenClose()
+    {
+        await RunRichText();
+        Close();
     }
 
     /// <summary>--auto: run the automatic tests, save, and exit (for remote runs and scripts).</summary>
@@ -161,6 +176,8 @@ public partial class MainWindow : Window
             await RunSlideTest(Results.S6, MemoryResultText, t => t.RunS6());
             TrySave();
             await RunSlideTest(Results.S2, SlidesResultText, t => t.RunS2());
+            TrySave();
+            await RunRichText();
 
             var path = TrySave();
             AutoStatusText.Text = path is null ? "Done, but the results couldn't be saved." : $"Done. Saved {Path.GetFileName(path)}.";
@@ -320,6 +337,33 @@ public partial class MainWindow : Window
             .Select(p => new ListBoxItem { Content = Path.GetFileName(p), Tag = p })
             .ToList();
 
+    // ---- Rich text (S3) ----
+
+    /// <summary>Runs the S3 automatic run on the Rich text tab (shown while it runs) and records its figures.</summary>
+    private async Task RunRichText()
+    {
+        if (testRunning)
+            return;
+        testRunning = true;
+        richText.RunButton.IsEnabled = false;
+        var previous = Tabs.SelectedItem;
+        Tabs.SelectedItem = RichTextTab;
+        try
+        {
+            await Dispatcher.Yield(DispatcherPriority.Background); // let the tab lay out first
+            var figures = await new RichTextTests(richText, s => AutoStatusText.Text = s).Run();
+            results.SetFigures(Results.S3, figures);
+            richText.ResultText.Text = string.Join(Environment.NewLine, figures.Select(f => $"{f.Name}: {f.Value}"));
+            AutoStatusText.Text = $"{Results.S3}: done.";
+        }
+        finally
+        {
+            Tabs.SelectedItem = previous;
+            testRunning = false;
+            richText.RunButton.IsEnabled = true;
+        }
+    }
+
     // ---- Results ----
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -366,6 +410,7 @@ public partial class MainWindow : Window
     {
         MediaFolderText.Text = results.State.MediaFolder is { } folder ? $"Media: {folder}" : "Media: not chosen";
         LoadBackgrounds();
+        richText.SetBackground(Media.Scan(results.State.MediaFolder).Backgrounds.FirstOrDefault());
     }
 
     // ---- Live readouts ----

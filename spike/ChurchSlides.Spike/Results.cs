@@ -37,12 +37,13 @@ public sealed class Results
 {
     public const string S1 = "S1 Output window";
     public const string S2 = "S2 Slides and crossfade";
+    public const string S3 = "S3 Rich text";
     public const string S6 = "S6 Memory and decode";
     public const string S7 = "S7 Startup";
     public const string S8 = "S8 System";
 
     /// <summary>Section order in the results file. Later chunks add their sections here.</summary>
-    public static readonly string[] SectionOrder = [S8, S1, S2, S6, S7];
+    public static readonly string[] SectionOrder = [S8, S1, S2, S3, S6, S7];
 
     public static readonly CheckItem[] Checklist =
     [

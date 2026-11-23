@@ -1,7 +1,7 @@
 <Window x:Class="ChurchSlides.Spike.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ChurchSlides spike" Width="1000" Height="680">
+        Title="ChurchSlides spike" Width="1240" Height="760">
   <DockPanel>
     <!-- Top bar: automatic run, save, media folder -->
     <Border DockPanel.Dock="Top" Padding="8" BorderBrush="#DDD" BorderThickness="0,0,0,1">
@@ -108,6 +108,8 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
+
+      <TabItem x:Name="RichTextTab" Header="Rich text (S3)" />
 
       <TabItem Header="Memory (S6)">
         <ScrollViewer VerticalScrollBarVisibility="Auto">

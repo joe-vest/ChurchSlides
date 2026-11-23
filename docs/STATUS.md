@@ -9,7 +9,7 @@ Last updated: 2026-11-23 (C0.2 done)
 |---|---|---|
 | C0.1 | Repository and documentation setup | done |
 | C0.2 | Spike A: output and crossfade (one combined spike program) | done: C0.2a shell (System S8, Output S1, Startup S7), C0.2b slides (Slides S2, Memory S6). Ready for G0 once C0.3 and C0.4 have added their tabs |
-| C0.3 | Spike B: rich text | todo |
+| C0.3 | Spike B: rich text | in progress: C0.3a converter, renderer and automatic run done; C0.3b tokens, paste, undo next |
 | C0.4 | Spike C: audio and timer | todo |
 | G0 | Owner runs the spike program on the church machine | blocked on C0.2-C0.4 |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |

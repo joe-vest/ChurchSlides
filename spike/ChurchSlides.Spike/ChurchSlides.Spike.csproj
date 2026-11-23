@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Throwaway spike (C0.2-C0.4). Not in ChurchSlides.slnx, references no src project. Deleted after G0. -->
+  <!-- Throwaway spike (C0.2-C0.4). Not in ChurchSlides.slnx. Deleted after G0. References only ChurchSlides.Domain (C0.3 decision 1). -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
@@ -12,6 +12,11 @@
 
   <ItemGroup>
     <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The real RichText model, for the S3 round trip (C0.3 decision 1). -->
+    <ProjectReference Include="..\..\src\ChurchSlides.Domain\ChurchSlides.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

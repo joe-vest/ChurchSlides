@@ -25,6 +25,9 @@ public static class Startup
 
     public static bool KestrelRequested { get; private set; }
     public static bool AutoRequested { get; private set; }
+
+    /// <summary>--auto-s3: only the rich-text run (S3), which needs no second monitor or media.</summary>
+    public static bool AutoS3Requested { get; private set; }
     public static string? KestrelUrl { get; private set; }
 
     public static void MainEntered(string[] args)
@@ -34,6 +37,7 @@ public static class Startup
         toMainMs = (DateTime.Now - processStart).TotalMilliseconds;
         KestrelRequested = args.Any(a => a.Equals("--kestrel", StringComparison.OrdinalIgnoreCase));
         AutoRequested = args.Any(a => a.Equals("--auto", StringComparison.OrdinalIgnoreCase));
+        AutoS3Requested = args.Any(a => a.Equals("--auto-s3", StringComparison.OrdinalIgnoreCase));
     }
 
     public static void StartKestrelIfRequested()

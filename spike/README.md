@@ -3,8 +3,8 @@
 A throwaway test program for the church PC (FRD PLT-008, ARCHITECTURE section 12). It measures whether
 the real app's design works on that machine. It is not part of the product and is deleted after G0.
 
-C0.2 has the System (S8), Output (S1), Slides (S2), Memory (S6) and Startup (S7) tabs. C0.3 and C0.4
-add rich text, audio and timer tabs.
+C0.2 has the System (S8), Output (S1), Slides (S2), Memory (S6) and Startup (S7) tabs. C0.3 adds the
+Rich text (S3) tab. C0.4 adds audio and timer tabs.
 
 The Slides and Memory tabs need the church's backgrounds. Press **Choose media folder…** (top right)
 and pick the folder with the background images (PNG, JPG). Put the church logo in the same folder,
@@ -34,16 +34,17 @@ and a zip of each in `spike/out`.
    the shortcut's Target box.
 
 `--auto` runs the automatic tests, saves the results and closes. It works with `--kestrel` too.
+`--auto-s3` runs only the rich-text test (no second monitor or media needed).
 
 ## What to do
 
 ### Remotely (Chrome Remote Desktop is fine)
 
 1. Choose the media folder (once; it's remembered). Press **Run automatic tests** and leave the
-   computer alone for about 4 minutes. It records the System facts, opens a test pattern on the
+   computer alone for about 5 minutes. It records the System facts, opens a test pattern on the
    second monitor and checks its position, runs the memory test (S6: decode times, then a typical
    Service presented on the second monitor), then the slide test (S2: 60 Cuts and 120 crossfades on
-   the second monitor), and saves the results. Remote access doesn't spoil these figures: frame
+   the second monitor), then the rich-text test (S3, on the Rich text tab), and saves the results. Remote access doesn't spoil these figures: frame
    timing is measured inside the program.
 2. Startup figures (S7): every launch is recorded. Restart Windows, then launch in this order and close
    the program each time:
@@ -80,6 +81,7 @@ Press **Save results** first; the program also saves when it closes.
 | Output (S1) | The window rectangle equals the monitor's pixel rectangle. All four edge lines show, no taskbar, no flicker. |
 | Slides (S2) | A 300 ms crossfade has on average under 1 dropped frame with pre-render where the product will run it, and looks smooth. A dropped frame is one more than 1.5 refresh intervals late. "Input to frame" is from the key press to the frame after the one showing the change (an upper bound), and must be under 100 ms (PLT-006). If UI-thread pre-render takes over about 10 ms, the product pre-renders on the render thread. |
 | Memory (S6) | Working set at most 300 MB while presenting (PLT-005). Decode times show what a downscaled cache copy saves over the original. |
+| Rich text (S3) | Round trips: every sample and random document unchanged. Editor / renderer: the same line breaks (equal "lines" and "breaks same"). The ink-pixel figure is the share of text pixels that differ: about 0-7% is edge smoothing only (the overlay looks identical); 20% or more means visibly different text. The "+N px" figures show how much wider the editor must be to break lines like the renderer. Keystroke to next frame under 50 ms and renderer under about 30 ms per slide (outline is a cost figure for SLD-025). |
 | Startup (S7) | Recorded for the owner to judge. As a guide: warm 3 s or less, cold 10 s or less. The development PC's `r2r` build JIT-compiles about 840 methods (1,270 with Kestrel). Many more on the church PC means the precompiled code was rejected on its CPU. |
 
 The status bar shows the program's memory and CPU, sampled every 250 ms. **Count frames** shows
