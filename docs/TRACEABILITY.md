@@ -18,12 +18,12 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | LIB-003 | MUST | C1.3 | partial (types, file format, no absolute paths in saved files; media copy comes with the first media import, C2.1/C2.4) |
 | LIB-004 | MUST | C1.3 | partial (read-only newer files, migration chain with fake steps; end-to-end migration test comes with the first schema bump) |
 | LIB-005 | MUST | C1.3 | done |
-| LIB-006 | MUST | C1.3, C1.4 | partial (C1.3: save-time hash check, Reload / Save as copy flow in editors; C1.4: watcher) |
-| LIB-007 | MUST | C1.4 | todo |
+| LIB-006 | MUST | C1.3, C1.4 | partial (C1.3: save-time hash check; C1.4a: watcher done; Reload / Save as copy flow in editors) |
+| LIB-007 | MUST | C1.4 | done (C1.4a, storage level; editors decide what to do with a change) |
 | LIB-008 | MUST | C1.3 | done |
-| LIB-009 | SHOULD | C1.4 | todo |
-| LIB-010 | MUST | C1.4 | todo |
-| LIB-011 | SHOULD | C1.4, C2.1 | todo |
+| LIB-009 | SHOULD | C1.4 | partial (C1.4a: problems detected; panel in C9.1) |
+| LIB-010 | MUST | C1.4 | partial (C1.4a: folder check and Unavailable; prompt in C2.6/C9.1) |
+| LIB-011 | SHOULD | C2.1, C6.2 | todo (moved from C1.4) |
 | LIB-012 | COULD | backlog | todo |
 | CAT-001 | MUST | C2.4 | todo |
 | CAT-002 | MUST | C2.4 | todo |
@@ -263,7 +263,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SVC-028 | SHOULD | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
 | LIVE-017 | MUST | C1.5, C2.2 | todo |
 | TPL-014 | MUST | C1.2a | logic done (C1.2a) |
-| LIB-013 | MUST | C1.3c, C6.1, C6.2 | partial (C1.3c: state file and repository; Mode switch and CCLI flows later) |
+| LIB-013 | MUST | C1.3c, C1.4, C6.1, C6.2 | partial (C1.3c: state file and repository; C1.4a: watched; Mode switch and CCLI flows later) |
 | CAT-010 | MUST | C1.3c, C2.4, C7.2 | partial (C1.3c: added on load, save refused without it; UI later) |
 | LIVE-018 | MUST | C1.5, C2.2 | todo |
 | LIVE-041 | MUST | C1.5 | todo |

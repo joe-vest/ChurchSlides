@@ -1,5 +1,6 @@
 using ChurchSlides.Domain.Model;
 using ChurchSlides.Storage.Migration;
+using ChurchSlides.Storage.Watching;
 
 namespace ChurchSlides.Storage;
 
@@ -32,7 +33,13 @@ public sealed class FolderLibrary : ILibrary
         // CAT-010: the Scripture Category is added in memory. Loading never writes a file.
         Categories = new SingletonRepository<CategoryList>(Layout.CategoriesFile, SaveValidation.Validate, files, BuiltInCategories.EnsureIn);
         Settings = new SingletonRepository<LibrarySettings>(Layout.SettingsFile, SaveValidation.Validate, files);
+
+        Monitor = new LibraryMonitor(Layout, files);
+        files.OnWritten = Monitor.RecordWrite;
     }
+
+    /// <summary>Notices changes made elsewhere (LIB-007) and lists files that aren't loaded (LIB-009). Our own saves are not reported.</summary>
+    public LibraryMonitor Monitor { get; }
 
     public LibraryLayout Layout { get; }
     public IObjectRepository<Show> Shows { get; }

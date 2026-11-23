@@ -1,7 +1,7 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C1.3c done)
+Last updated: 2026-11-23 (C1.4a done)
 
 ## Chunks
 
@@ -16,7 +16,7 @@ Last updated: 2026-11-23 (C1.3c done)
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
 | C1.3c | Model and storage changes from the document review | done: C1.3c-1 domain, C1.3c-2 storage (313 domain, 86 storage tests, see docs/plans/C1.3c.md) |
-| C1.4 | Library watching and search | planned (docs/plans/C1.4.md, agreed), next |
+| C1.4 | Library watching and search | C1.4a watching done (114 storage tests); C1.4b search next (docs/plans/C1.4.md) |
 | C1.5 | Navigation engine (review gate) | todo |
 | C2.1 | Slide renderer and image pipeline | todo |
 | C2.2 | Output window and operator shell (G1) | todo |
@@ -59,18 +59,17 @@ Last updated: 2026-11-23 (C1.3c done)
 
 ## Follow-ups (found, out of scope of the chunk that found them)
 
-- C1.4 also watches `service-state/` (last-write-wins files; a change from the other machine should reload the Mode).
 - C1.5: navigation must use `SkipRules.InForce(item, show)` for the skip list, never `ShowItem.SkippedSlideIds` directly.
 - C2.5: deleting a Service must also call `ServiceStates.Delete` (a state file with no Service is harmless but untidy).
 - C5.2: the Action editor must only offer triggers allowed at the level (`ActionRules.IsAllowed`); storage already refuses the rest.
-- C1.4: duplicate-ID detection (LIB-009) compares top-level file IDs only. Duplicated Services legitimately share the IDs of their Show Copies and Scripture slides.
 - C4.2 (cue editor): adding the first Cue to a Show with Skipped marks. FRD 0.3 says the marks and any Service skip lists are then ignored (SVC-025). The cue editor should say so.
 - C1.5: navigation must honor `ShowItem.SkippedSlideIds` for both reference and copy items (except for cued Shows), and allow a direct jump to a skipped slide (LIVE-017).
 - C2.5: the editor must call `EditPolicy.ForSlideEdit`, `ShowCopying.Fork`/`Revert`, `ShowItems.AddReference`/`FillPlaceholder` and `SkipRules` rather than reimplement them.
 - C3.3: `ServiceCopying` must implement Save as Service Template conversions (SVC-005): Show Copies back to References, remembered Placeholders back to Placeholders, Scripture Items to stubs.
 - Id<T> uses `Activator`/`MakeGenericType` in its converter factory. Fine now, revisit if trimming or AOT is ever wanted.
 - First schema bump: add its migration step and an end-to-end test that opens an older file through `FolderLibrary` (C1.3 only tests the chain with fake steps, because every kind is still version 1).
-- C1.4: reading a file held open exclusively by a sync tool returns Unreadable straight away. Consider retrying reads like writes.
+- Reading a file held open exclusively by a sync tool returns Unreadable (listed as a problem until the next event). Measure at G2 before adding read retries.
+- C1.4a: the app (C2.2) must call `Monitor.Scan()` at startup, then start `FolderWatcher` and post `Updated` to the UI thread. `SystemClock` is the one allowed `DateTimeOffset.Now` in Domain.
 - Optional: add an `AssemblyInfo`/version stamp when packaging (C9.3).
 - Markdown lint warnings in docs (cosmetic).
 

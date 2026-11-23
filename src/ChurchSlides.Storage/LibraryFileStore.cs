@@ -11,6 +11,9 @@ internal sealed class LibraryFileStore(AtomicFileWriter writer, MigrationChain m
 {
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
+    /// <summary>Told about every successful write (with its stamp) and delete (null stamp), so the monitor ignores our own saves (decision 6).</summary>
+    public Action<string, FileStamp?>? OnWritten { get; set; }
+
     /// <summary>Null when the file doesn't exist.</summary>
     private static (byte[] Bytes, FileStamp Stamp)? Read(string path)
     {
@@ -100,7 +103,9 @@ internal sealed class LibraryFileStore(AtomicFileWriter writer, MigrationChain m
             }
 
             var written = writer.Write(path, bytes);
-            return new(SaveOutcome.Saved, Stamp: FileStamp.FromBytes(bytes, written));
+            var stamp = FileStamp.FromBytes(bytes, written);
+            OnWritten?.Invoke(path, stamp);
+            return new(SaveOutcome.Saved, Stamp: stamp);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -121,6 +126,7 @@ internal sealed class LibraryFileStore(AtomicFileWriter writer, MigrationChain m
                 return new(SaveOutcome.Conflict, DiskStamp: disk.Value.Stamp, Error: "The file was changed elsewhere since it was loaded.");
 
             writer.Delete(path);
+            OnWritten?.Invoke(path, null);
             return new(SaveOutcome.Deleted);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
