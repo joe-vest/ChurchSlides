@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ChurchSlides.App/ChurchSlides.App.csproj" />
+    <Project Path="src/ChurchSlides.Audio/ChurchSlides.Audio.csproj" />
+    <Project Path="src/ChurchSlides.Domain/ChurchSlides.Domain.csproj" />
+    <Project Path="src/ChurchSlides.Engine/ChurchSlides.Engine.csproj" />
+    <Project Path="src/ChurchSlides.Remote/ChurchSlides.Remote.csproj" />
+    <Project Path="src/ChurchSlides.Rendering/ChurchSlides.Rendering.csproj" />
+    <Project Path="src/ChurchSlides.Scripture/ChurchSlides.Scripture.csproj" />
+    <Project Path="src/ChurchSlides.Storage/ChurchSlides.Storage.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ChurchSlides.Architecture.Tests/ChurchSlides.Architecture.Tests.csproj" />
+    <Project Path="tests/ChurchSlides.Domain.Tests/ChurchSlides.Domain.Tests.csproj" />
+    <Project Path="tests/ChurchSlides.Engine.Tests/ChurchSlides.Engine.Tests.csproj" />
+    <Project Path="tests/ChurchSlides.Scripture.Tests/ChurchSlides.Scripture.Tests.csproj" />
+    <Project Path="tests/ChurchSlides.Storage.Tests/ChurchSlides.Storage.Tests.csproj" />
+  </Folder>
+</Solution>

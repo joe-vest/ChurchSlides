@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChurchSlides.Domain\ChurchSlides.Domain.csproj" />
+    <ProjectReference Include="..\ChurchSlides.Storage\ChurchSlides.Storage.csproj" />
+    <ProjectReference Include="..\ChurchSlides.Scripture\ChurchSlides.Scripture.csproj" />
+  </ItemGroup>
+
+</Project>
+
