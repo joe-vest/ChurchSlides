@@ -82,7 +82,7 @@ A modular monolith. One process, a handful of assemblies with strict dependency 
 | `Remote` | Kestrel host, embedded web page, SSE broadcaster, token and IP filter | REM |
 | `App` | Views and view-models, editors, cue editor, settings, `OutputWindow`, hotkeys, crash handling | UI, SAFE-006 |
 
-`Engine` talks to the outside world only through interfaces it owns: `ILibrary`, `IAudioPlayer`, `IClock`, `IOutputSurface`, `IRemoteHost`. That makes it testable with fakes (fake clock for timers, fake audio for cues) and keeps the FRD's FUT-004 "single command API" honest.
+`ILibrary` lives in `Storage` (the dependency rule has Engine reference Storage), so Engine tests fake it from there. `Engine` talks to the rest of the outside world only through interfaces it owns: `IAudioPlayer`, `IClock`, `IOutputSurface`, `IRemoteHost`. That makes it testable with fakes (fake clock for timers, fake audio for cues) and keeps the FRD's FUT-004 "single command API" honest.
 
 ---
 
@@ -283,7 +283,7 @@ Timer tokens are laid out as **live text slots** in Layer 2:
 ### 8.3 Conflict protection (LIB-005..007, DEC-014)
 
 - **Atomic save:** write `{id}.json.saving` then replace via `File.Replace`/move, retrying on `IOException` (Drive may briefly hold a file open). `.saving` files are ignored when loading.
-- **Overwrite check:** each loaded object remembers `(lastWriteTime, SHA-256)`. On save, re-check the disk. If changed, offer **Reload** or **Save as copy** (LIB-006, AS-08).
+- **Overwrite check:** each loaded object remembers `(lastWriteTime, SHA-256)`. On save, re-check the disk: only a different hash counts as a change (a sync tool re-stamping the file does not), identical content is not rewritten, and a file from a newer schema is never touched. If changed, offer **Reload** or **Save as copy** (LIB-006, AS-08).
 - **Watcher:** `FileSystemWatcher` events are debounced and coalesced per path, since Drive produces bursts and temp files. A file is reloaded only if it's not being edited, our own saves are ignored by hash, and the Catalog and search index are updated incrementally (LIB-007, CAT-005).
 - **Conflict copies:** files named like sync conflicts or with duplicate `Id`s are listed in a "Library problems" panel, not loaded (LIB-009).
 - **Schema:** each file has `SchemaVersion`. Older files migrate in memory via a chain of small migrators over `JsonNode`. Newer files open read-only with a warning (LIB-004).

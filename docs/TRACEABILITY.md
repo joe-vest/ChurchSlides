@@ -13,14 +13,14 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | PLT-007 | MUST | C9.2 | todo |
 | PLT-008 | MUST | C0.2-C0.4 | todo |
 | PLT-009 | MUST | C0.2-C0.4 | todo |
-| LIB-001 | MUST | C1.3 | todo |
-| LIB-002 | MUST | C1.3 | todo |
-| LIB-003 | MUST | C1.3 | partial (C1.1: types and file format; behavior in later chunks) |
-| LIB-004 | MUST | C1.3 | partial (C1.1: types and file format; behavior in later chunks) |
-| LIB-005 | MUST | C1.3 | todo |
-| LIB-006 | MUST | C1.4 | todo |
+| LIB-001 | MUST | C1.3 | done (C1.3b: LocalSettings.LibraryPath) |
+| LIB-002 | MUST | C1.3 | done |
+| LIB-003 | MUST | C1.3 | partial (types, file format, no absolute paths in saved files; media copy comes with the first media import, C2.1/C2.4) |
+| LIB-004 | MUST | C1.3 | partial (read-only newer files, migration chain with fake steps; end-to-end migration test comes with the first schema bump) |
+| LIB-005 | MUST | C1.3 | done |
+| LIB-006 | MUST | C1.3, C1.4 | partial (C1.3: save-time hash check, Reload / Save as copy flow in editors; C1.4: watcher) |
 | LIB-007 | MUST | C1.4 | todo |
-| LIB-008 | MUST | C1.3 | todo |
+| LIB-008 | MUST | C1.3 | done |
 | LIB-009 | SHOULD | C1.4 | todo |
 | LIB-010 | MUST | C1.4 | todo |
 | LIB-011 | SHOULD | C1.4, C2.1 | todo |
@@ -243,8 +243,8 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | CHK-002 | MUST | C6.2 | todo |
 | CHK-003 | SHOULD | C6.2 | todo |
 | CHK-004 | SHOULD | C6.2 | todo |
-| SAFE-001 | MUST | C2.3 | todo |
-| SAFE-002 | MUST | C2.3 | todo |
+| SAFE-001 | MUST | C1.3, C2.3 | partial (C1.3: draft store; editing UI in C2.3) |
+| SAFE-002 | MUST | C1.3, C2.3 | partial (C1.3: draft store, outside the Library; 30 s autosave timer in C2.3) |
 | SAFE-003 | MUST | C2.3 | todo |
 | SAFE-004 | SHOULD | C9.1 | todo |
 | SAFE-005 | SHOULD | C9.1 | todo |

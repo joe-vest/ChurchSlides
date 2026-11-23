@@ -14,7 +14,7 @@ Last updated: 2026-11-23
 | G0 | Owner runs spikes on church machine | blocked on C0.2-C0.4 |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
-| C1.3 | Storage foundation | todo |
+| C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
 | C1.4 | Library watching and search | todo |
 | C1.5 | Navigation engine (review gate) | todo |
 | C2.1 | Slide renderer and image pipeline | todo |
@@ -48,10 +48,9 @@ Last updated: 2026-11-23
 - C1.5: navigation must honor `ShowItem.SkippedSlideIds` for both reference and copy items, and allow a direct jump to a skipped slide (LIVE-017).
 - C2.5: the editor must call `EditPolicy.ForSlideEdit`, `ShowCopying.Fork`/`Revert`, `ShowItems.AddReference`/`FillPlaceholder` and `SkipRules` rather than reimplement them.
 
-- C1.3: reject empty IDs (`Id<T>.IsEmpty`) and empty required names on save, because the model no longer uses `required`.
-- C1.3: migrations operate on the JSON before deserializing, and must add any newly required fields to old files.
-- C1.3: write files as UTF-8 without BOM using `VersionedFile.Serialize` output as-is.
 - Id<T> uses `Activator`/`MakeGenericType` in its converter factory. Fine now, revisit if trimming or AOT is ever wanted.
+- First schema bump: add its migration step and an end-to-end test that opens an older file through `FolderLibrary` (C1.3 only tests the chain with fake steps, because every kind is still version 1).
+- C1.4: reading a file held open exclusively by a sync tool returns Unreadable straight away. Consider retrying reads like writes.
 - Optional: add an `AssemblyInfo`/version stamp when packaging (C9.3).
 - Markdown lint warnings in docs (cosmetic).
 
