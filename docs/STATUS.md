@@ -8,7 +8,7 @@ Last updated: 2026-11-23 (C1.5 done)
 | Chunk | Title | Status |
 |---|---|---|
 | C0.1 | Repository and documentation setup | done |
-| C0.2 | Spike A: output and crossfade (one combined spike program) | todo, next |
+| C0.2 | Spike A: output and crossfade (one combined spike program) | planned, next: C0.2a shell (see docs/plans/C0.2.md) |
 | C0.3 | Spike B: rich text | todo |
 | C0.4 | Spike C: audio and timer | todo |
 | G0 | Owner runs the spike program on the church machine | blocked on C0.2-C0.4 |
@@ -46,6 +46,7 @@ Last updated: 2026-11-23 (C1.5 done)
   - Built-in Scripture Category replaces the default Scripture Template setting (CAT-010, D-11).
   - CCLI: Cancel doesn't stop a close or exit. Crash safety net on startup (CCLI-018).
   - The review's file-shape changes amend schema version 1 in place, with no migration, because no real Library exists yet. An exception to the schema policy above, for C1.3c only.
+- Owner, 2026-11-23: trim (AUD-003) is a nice-to-have. If spike S4 shows Trim Start can't seek accurately on the church's MP3s (all VBR), drop Trim Start at G0, and drop Trim End too if it turns out hard. The FRD stays unchanged until G0 decides. Seek accuracy still matters for the cue editor's click-to-seek (C4.2), where it is less critical because it isn't live.
 
 ## Open FRD questions
 
