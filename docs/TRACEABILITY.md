@@ -258,3 +258,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | FUT-002 | MUST | C1.5, C2.1 | todo |
 | FUT-003 | MUST | C1.5, C2.1 | todo |
 | FUT-004 | SHOULD | C1.5, C2.1 | todo |
+| SHOW-008 | MUST | C1.2a (flag), C1.2b (rules), C2.4 (UI) | todo |
+| SVC-027 | MUST | C1.2b, C2.5 | todo |
+| SVC-028 | SHOULD | C1.2b, C2.5 | todo |
+| LIVE-017 | MUST | C1.5, C2.2 | todo |

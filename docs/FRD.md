@@ -292,6 +292,7 @@ Library/
 | SHOW-005 | MUST | A Show may have a default Template (see TPL-010). |
 | SHOW-006 | MUST | A Show may have at most one Audio Track (Section 11). |
 | SHOW-007 | MUST | A Show may have Actions (Section 13). |
+| SHOW-008 | MUST | A Slide may be marked **Skipped** in the catalog. This is only a default for Services that add the Show (SVC-027). The slide still exists and is still shown in the editor. Not allowed for a Show with an Audio Track that has Cues (SVC-025). |
 
 ### 7.2 Slides and canvas
 
@@ -378,12 +379,14 @@ Library/
 | ID | Priority | Requirement |
 |---|---|---|
 | SVC-020 | MUST | Adding a catalog Show to a Service creates a Show Reference. The Service displays the catalog Show's current content. |
-| SVC-021 | MUST | A Show Reference may skip slides: the user toggles individual slides off for this Service only. Skipped slides aren't shown in presentation. The catalog Show is unchanged. This covers singing 4 of 8 verses. |
+| SVC-021 | MUST | A Show Reference may skip slides: the user toggles individual slides off for this Service only. Skipped slides aren't shown in presentation. The catalog Show is unchanged. This covers singing 4 of 8 verses. The user can also un-skip any slide, including one the catalog marks as Skipped, and skip others instead. Changes apply only to this Service. |
 | SVC-022 | MUST (ASSUMPTION for prompt wording) | When the user edits slide content of a Show Reference from inside a Service: for **Presentations**, the item is automatically forked into a Show Copy and the edit applies only to this Service. For **Songs**, prompt "Edit the catalog song (changes every Service)" or "Make a copy for this Service only", with catalog edit as the default. |
 | SVC-023 | MUST | A forked item is clearly marked as "Modified for this Service" in the Service editor. |
 | SVC-024 | SHOULD | A Show Copy offers "Revert to catalog version", which discards the copy and restores the reference. |
-| SVC-025 | MUST | Skipping slides is disabled for a Show that has an Audio Track with Cues. The UI explains why (audio cues require the full sequence). |
+| SVC-025 | MUST | Skipping slides is disabled for a Show that has an Audio Track with Cues. The UI explains why (audio cues require the full sequence). The same rule applies to catalog Skipped marks (SHOW-008). |
 | SVC-026 | MUST | If a referenced Show is deleted from the Catalog, the Service Item shows as "Missing show" and the pre-service check flags it. The Service still opens. |
+| SVC-027 | MUST | When a catalog Show is added to a Service (directly, or by filling a Placeholder), the Show's catalog Skipped marks (SHOW-008) are **copied** into the Service Item's skip list. From then on the Service Item is independent: later changes to the catalog marks don't affect it. Example: verses 5 and 6 are Skipped in the catalog. A new Service starts with 5 and 6 skipped. In that Service the user un-skips them and skips 3 and 4. The catalog is untouched. |
+| SVC-028 | SHOULD | The Service editor offers "Reset to catalog defaults" on a Show Reference, which replaces its skip list with the current catalog marks. |
 
 ### 10.3 Service Templates and Placeholders
 
@@ -572,6 +575,7 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 | LIVE-008 | MUST | The "next slide" shown in the Preview and on the remote follows the same rules (crosses items, honors skips). It does **not** predict Action-driven jumps. |
 | LIVE-009 | MUST | Starting presentation fires `ServiceStarted`, then displays the first slide of the first item (or a slide the user clicks). |
 | LIVE-016 | MUST | Item-level navigation: **Next item** and **Previous item** go to the first displayable slide of the adjacent item (skipping unfilled Placeholders and missing Shows). Clicking an item header does the same for that item. Items and slides remain two visible levels in the operator UI (LIVE-004). The continuous Next/Previous of LIVE-005 is a convenience for moving through slides, not a flattening of the item level. The current position is always an item plus a slide. |
+| LIVE-017 | MUST | Skipped slides appear greyed with a **SKIPPED** badge in the operator UI. Clicking a Skipped slide still displays it (LIVE-004). Next and Previous from it move to the nearest non-skipped slide (LIVE-006). |
 
 ### 15.3 Screen controls
 
@@ -793,3 +797,6 @@ End-to-end scenarios the finished app must pass. Use them as integration tests.
 - ACT-002/011/012/022: Actions may be attached to Service Items, and `GoToSlide` accepts a target within the current Show, so loops and jumps work from catalog Shows.
 - TMR-009: a timer token stands alone in its Text Box.
 - Section 0 point 6 now points to Section 23.
+
+**0.3 (in progress, 2026-11-23)**
+- Skipping: catalog Skipped marks as a per-Service default (SHOW-008, SVC-027, SVC-028), clarified SVC-021 and SVC-025, and LIVE-017 (skipped slides display when clicked). More 0.3 changes are listed in docs/plans/C1.2.md ("Doc updates") and will land when C1.2 is executed.
