@@ -52,11 +52,16 @@ public sealed record SlideTextBox
 {
     [JsonRequired] public Id<SlideTextBox> Id { get; init; }
 
-    /// <summary>Name of the bound Template Box. Null means detached.</summary>
-    public string? BoundTemplateBoxName { get; init; }
+    /// <summary>
+    /// The Template Box this text box takes its defaults (and, unless detached, its geometry) from.
+    /// Kept when detached, so "Reattach" knows where to go back to (TPL-022, TPL-023).
+    /// </summary>
+    public string? TemplateBoxName { get; init; }
 
-    /// <summary>Required when detached.</summary>
+    /// <summary>A non-null geometry means this text box is detached and uses its own position.</summary>
     public RectRelative? Geometry { get; init; }
+
+    [JsonIgnore] public bool IsDetached => Geometry is not null;
 
     [JsonRequired] public RichText Content { get; init; } = RichText.Empty;
 

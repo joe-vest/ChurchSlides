@@ -33,6 +33,12 @@ public sealed record RichText
         }
         return sb.ToString();
     }
+
+    /// <summary>Removes all inline formatting so Template defaults apply again (TPL-025).</summary>
+    public RichText WithoutFormatting() => this with
+    {
+        Paragraphs = [.. Paragraphs.Select(p => p with { Inlines = [.. p.Inlines.Select(i => i with { Format = null })] })],
+    };
 }
 
 public sealed record Paragraph

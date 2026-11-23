@@ -13,7 +13,7 @@ Last updated: 2026-11-23
 | C0.4 | Spike C: audio and timer | todo |
 | G0 | Owner runs spikes on church machine | blocked on C0.2-C0.4 |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
-| C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | planned (docs/plans/C1.2.md), awaiting owner review of the 13 decisions (12 and 13 added for skipping, decided) |
+| C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | C1.2a done (slide resolution, 226 tests, see docs/plans/C1.2.md). C1.2b (copy rules) next |
 | C1.3 | Storage foundation | todo |
 | C1.4 | Library watching and search | todo |
 | C1.5 | Navigation engine (review gate) | todo |

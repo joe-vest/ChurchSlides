@@ -44,7 +44,7 @@ internal static class SampleData
                     new SlideTextBox
                     {
                         Id = I<SlideTextBox>(20),
-                        BoundTemplateBoxName = "body",
+                        TemplateBoxName = "body",
                         Content = new RichText
                         {
                             Paragraphs =
@@ -72,7 +72,8 @@ internal static class SampleData
                     new SlideTextBox
                     {
                         Id = I<SlideTextBox>(21),
-                        Geometry = new RectRelative(0.1, 0.2, 0.8, 0.5),
+                        TemplateBoxName = "body",
+                        Geometry = new RectRelative(0.1, 0.2, 0.8, 0.5), // detached: own position, still remembers "body"
                         HAlign = HorizontalAlign.Left,
                         VAlign = VerticalAlign.Top,
                         LineSpacing = 1.2,
@@ -93,13 +94,14 @@ internal static class SampleData
             {
                 Id = Verse2,
                 Label = "Verse 2",
+                SkippedByDefault = true,
                 BackgroundOverride = new Background { Kind = MediaKind.SolidColor, ColorHex = "#102030" },
                 TextBoxes =
                 [
                     new SlideTextBox
                     {
                         Id = I<SlideTextBox>(22),
-                        BoundTemplateBoxName = "body",
+                        TemplateBoxName = "body",
                         Content = new RichText
                         {
                             Paragraphs =
@@ -146,7 +148,7 @@ internal static class SampleData
                     new SlideTextBox
                     {
                         Id = I<SlideTextBox>(51),
-                        BoundTemplateBoxName = "body",
+                        TemplateBoxName = "body",
                         Content = new RichText { Paragraphs = [P(T("Welcome to church"))] },
                     },
                 ],

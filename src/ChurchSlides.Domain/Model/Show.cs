@@ -41,6 +41,9 @@ public sealed record Slide
 {
     [JsonRequired] public Id<Slide> Id { get; init; }
     [JsonRequired] public string Label { get; init; } = "";
+
+    /// <summary>Catalog default: Services that add the Show start with this slide skipped (SHOW-008, SVC-027).</summary>
+    [JsonRequired] public bool SkippedByDefault { get; init; }
     public Id<Template>? TemplateOverrideId { get; init; }
     public Background? BackgroundOverride { get; init; }
     [JsonRequired] public ImmutableArray<SlideTextBox> TextBoxes { get; init; } = [];

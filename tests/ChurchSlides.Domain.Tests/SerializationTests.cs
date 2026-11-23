@@ -41,8 +41,12 @@ public class SerializationTests
         Assert.Equal("Chorus", show.Slides[1].Label);
 
         var detached = show.Slides[1].TextBoxes[0];
-        Assert.Null(detached.BoundTemplateBoxName);
+        Assert.True(detached.IsDetached);
+        Assert.Equal("body", detached.TemplateBoxName); // TPL-023: remembered so Reattach works
         Assert.Equal(new RectRelative(0.1, 0.2, 0.8, 0.5), detached.Geometry);
+        Assert.False(show.Slides[0].TextBoxes[0].IsDetached);
+        Assert.False(show.Slides[0].SkippedByDefault);
+        Assert.True(show.Slides[2].SkippedByDefault); // SHOW-008
         Assert.Equal(HorizontalAlign.Left, detached.HAlign);
         Assert.Equal(1.2, detached.LineSpacing);
 
@@ -284,6 +288,7 @@ public class SerializationTests
         Assert.Contains("— Señor", json); // accents and symbols not escaped
         Assert.Contains("\"00000000-0000-0000-0000-000000000001\"", json); // ids as plain GUID strings
         Assert.DoesNotContain("null", json); // nulls omitted
+        Assert.DoesNotContain("isDetached", json); // derived, not stored
     }
 
     [Fact]

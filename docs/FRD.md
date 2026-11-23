@@ -167,15 +167,15 @@ record SongMetadata(
   string? Authors, string? Copyright, string? CcliSongNumber, bool IsPublicDomain);
 
 record Slide(
-  Guid Id, string Label, Guid? TemplateOverrideId, Background? BackgroundOverride,
+  Guid Id, string Label, bool SkippedByDefault, Guid? TemplateOverrideId, Background? BackgroundOverride,
   List<TextBox> TextBoxes, List<Action> Actions);
 
 record Background(MediaKind Kind, string? MediaPath, string? ColorHex, BackgroundFit Fit);
 enum MediaKind { Image, SolidColor /* Video reserved for future */ }
 
 record TextBox(
-  Guid Id, string? BoundTemplateBoxName,  // null = detached
-  RectRelative? Geometry,                  // required when detached
+  Guid Id, string? TemplateBoxName,        // the Template Box it takes defaults from; kept when detached
+  RectRelative? Geometry,                  // non-null = detached (own position)
   RichTextContent Content);                // inline formatting runs; may contain tokens
 
 record RectRelative(double X, double Y, double Width, double Height); // 0..1 of canvas
@@ -336,10 +336,11 @@ Library/
 | TPL-011 | COULD | A Service Item Template override, inserted between Slide override and Show default in the order. |
 | TPL-012 | MUST | Each Category may have a default Template. |
 | TPL-013 | MUST | Template resolution happens at render time, so changing a Category's default Template changes all its Shows the next time they're displayed. |
+| TPL-014 | MUST | Resolution never fails. A Template ID whose Template no longer exists is skipped and reported, and the next level applies. If no Template resolves at any level, a built-in plain Template (black background, one full-size box, one copyright box) is used and the problem is reported to the pre-service check (CHK-001). Template Box names match ignoring case. |
 | TPL-020 | MUST | A Text Box is either **bound** to a Template Box by name, or **detached**. |
 | TPL-021 | MUST | A bound Text Box takes its geometry and default formatting from the resolved Template's matching box. |
 | TPL-022 | MUST | A detached Text Box keeps its own geometry. It still uses the Template's defaults for any formatting it doesn't set itself. |
-| TPL-023 | MUST | Detaching is an explicit user action ("Detach from template"), and a detached box shows a visible badge in the editor. A "Reattach" action restores binding and discards the box's own geometry. |
+| TPL-023 | MUST | Detaching is an explicit user action ("Detach from template"), and a detached box shows a visible badge in the editor. A "Reattach" action restores binding and discards the box's own geometry. A detached Text Box remembers the name of the Template Box it came from. That is how it gets its defaults (TPL-022) and how Reattach knows where to go back to. Detaching copies the box's current position, so the box doesn't move when detached. |
 | TPL-024 | MUST | Inline range formatting (SLD-021) always belongs to the text and survives Template changes. Template defaults apply only to text without explicit formatting. |
 | TPL-025 | SHOULD | A "Clear formatting" action on a Text Box or selection removes inline formatting so Template defaults apply again. |
 | TPL-026 | MUST | New slides created in a Show get one bound Text Box for each Template Box of the resolved Template, except the copyright box. |
@@ -526,7 +527,7 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 | CCLI-001 | MUST | Library setting: church CCLI license number. |
 | CCLI-002 | MUST | Show metadata as in SHOW-003. A Show is "reportable" if Is Public Domain is false and CCLI Song Number is not empty. |
 | CCLI-003 | MUST | Metadata tokens available in any Text Box: `{{show.title}}`, `{{show.authors}}`, `{{show.copyright}}`, `{{show.ccli}}`, `{{church.ccliLicense}}`. |
-| CCLI-004 | MUST | If the resolved Template has a copyright box, the copyright text is rendered in it on the Show's first or last slide according to Copyright Placement (SHOW-004). Its content comes from a Library-level copyright format string built from metadata tokens (default: `{{show.title}} — {{show.authors}} · © {{show.copyright}} · Used by permission · CCLI License #{{church.ccliLicense}}`). |
+| CCLI-004 | MUST | If the resolved Template has a copyright box, the copyright text is rendered in it on the Show's first or last slide according to Copyright Placement (SHOW-004). Its content comes from a Library-level copyright format string built from metadata tokens (default: `{{show.title}} — {{show.authors}} · © {{show.copyright}} · Used by permission · CCLI License #{{church.ccliLicense}}`). "First" and "last" mean the first and last slide actually **displayed** in the Service: slides skipped in the Service are ignored. Metadata that is empty renders as empty text, without clean-up of the surrounding punctuation. |
 | CCLI-005 | MUST | The copyright box isn't rendered for public-domain Shows, or when Copyright Placement is None. |
 
 ### 14.3 Usage logging
@@ -799,4 +800,5 @@ End-to-end scenarios the finished app must pass. Use them as integration tests.
 - Section 0 point 6 now points to Section 23.
 
 **0.3 (in progress, 2026-11-23)**
-- Skipping: catalog Skipped marks as a per-Service default (SHOW-008, SVC-027, SVC-028), clarified SVC-021 and SVC-025, and LIVE-017 (skipped slides display when clicked). More 0.3 changes are listed in docs/plans/C1.2.md ("Doc updates") and will land when C1.2 is executed.
+- Skipping: catalog Skipped marks as a per-Service default (SHOW-008, SVC-027, SVC-028), clarified SVC-021 and SVC-025, and LIVE-017 (skipped slides display when clicked). - C1.2a: Text Box keeps its Template Box name when detached (TPL-023, section 4 sketch). TPL-014 (resolution never fails, built-in fallback Template, case-insensitive box names). CCLI-004 clarified: first/last displayed slide, no punctuation clean-up. Slide gets `SkippedByDefault` in the section 4 sketch.
+- C1.2b (not yet executed): Show Copy keeps skip list and remembered Placeholder; forking keeps item and slide IDs and mints a new Show ID.

@@ -140,6 +140,8 @@ Slide + Show + Template chain + Service context  ──►  RenderModel (immutab
 4. **Resolve tokens**: Variables from the current Service, Show metadata, church license. Timer tokens become `LiveTextRun`s (§8.4), not static text.
 5. Output a `RenderModel`: background spec, positioned text boxes with fully resolved run formatting (inline formatting wins over Template defaults, TPL-024), and live-text slots.
 
+Resolution never fails (TPL-014). Anything wrong is worked around and listed in `RenderModel.Problems` (missing Template, unknown Template Box, empty or undefined Variable, undefined Timer, ...), which the pre-service check reads. If no Template resolves, a built-in plain Template is used. Timer tokens resolve to `RenderTimerRun`s that carry the Timer's warning settings, and the renderer fills in the live value. The resolver lives in `ChurchSlides.Domain.Resolution`: `TemplateResolver`, `SlideResolver`, `TokenMarkup`, `TextBoxBinding`.
+
 Resolved models are cached by key (`slideId`, `templateVersion`, `variablesVersion`, `canvas`). Invalidation is by version counters on Templates, Variables, and Shows. This satisfies TPL-003/013 (changing a Template affects the next display) without touching slide files.
 
 ### 5.2 Service navigation (items and slides are two levels, always)

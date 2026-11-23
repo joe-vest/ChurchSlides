@@ -21,10 +21,11 @@
       {
         "id": "00000000-0000-0000-0000-000000000010",
         "label": "Verse 1",
+        "skippedByDefault": false,
         "textBoxes": [
           {
             "id": "00000000-0000-0000-0000-000000000020",
-            "boundTemplateBoxName": "body",
+            "templateBoxName": "body",
             "content": {
               "paragraphs": [
                 {
@@ -69,6 +70,7 @@
       {
         "id": "00000000-0000-0000-0000-000000000011",
         "label": "Chorus",
+        "skippedByDefault": false,
         "templateOverrideId": "00000000-0000-0000-0000-000000000004",
         "backgroundOverride": {
           "kind": "Image",
@@ -78,6 +80,7 @@
         "textBoxes": [
           {
             "id": "00000000-0000-0000-0000-000000000021",
+            "templateBoxName": "body",
             "geometry": {
               "x": 0.1,
               "y": 0.2,
@@ -118,6 +121,7 @@
       {
         "id": "00000000-0000-0000-0000-000000000012",
         "label": "Verse 2",
+        "skippedByDefault": true,
         "backgroundOverride": {
           "kind": "SolidColor",
           "colorHex": "#102030",
@@ -126,7 +130,7 @@
         "textBoxes": [
           {
             "id": "00000000-0000-0000-0000-000000000022",
-            "boundTemplateBoxName": "body",
+            "templateBoxName": "body",
             "content": {
               "paragraphs": [
                 {
