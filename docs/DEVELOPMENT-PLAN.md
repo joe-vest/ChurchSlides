@@ -64,7 +64,7 @@ Each chunk is two or three short sessions rather than one long one. Starting eac
 
 **Step C: Verify and close (same session, or a short fresh one).**
 - `dotnet build -warnaserror` and `dotnet test` green.
-- Run `/verify` and `/simplify` before committing, and `/review` on the larger chunks.
+- Run `/dotnet-verify` and `/dotnet-simplify` before committing, and `/review` on the larger chunks.
 - Update `TRACEABILITY.md` and `STATUS.md`.
 - Commit with the chunk ID and FRD IDs in the message.
 - For UI chunks, produce a manual checklist in `docs/checklists/` and note which items the owner should try.

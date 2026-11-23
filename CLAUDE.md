@@ -33,11 +33,11 @@ dotnet test                      # all tests
 ./scripts/check.ps1              # build + test, as run before every commit
 ```
 
-Project slash commands live in `.claude/commands/` and are .NET versions of the user-level ones: `/verify` (format, warnings-as-errors build, tests, project rules), `/test`, `/simplify`, `/push`. Run `/verify` and `/simplify` before every code commit.
+Project slash commands live in `.claude/commands/` and are .NET versions of the user-level (Python) ones, named `dotnet-*` so they don't collide with them: `/dotnet-verify` (format, warnings-as-errors build, tests, project rules), `/dotnet-test`, `/dotnet-simplify`, `/dotnet-push`. Run `/dotnet-verify` and `/dotnet-simplify` before every code commit. Do not use the user-level `/verify` here (it runs ruff/mypy/pytest).
 
 ## Chunk routine (summary)
 
-Plan (fresh session, write `docs/plans/Cx.y.md`) → Execute (fresh session, test-first) → Verify (`/verify`, `/simplify`, update `docs/TRACEABILITY.md` and `docs/STATUS.md`) → Commit with the chunk ID and requirement IDs in the message.
+Plan (fresh session, write `docs/plans/Cx.y.md`) → Execute (fresh session, test-first) → Verify (`/dotnet-verify`, `/dotnet-simplify`, update `docs/TRACEABILITY.md` and `docs/STATUS.md`) → Commit with the chunk ID and requirement IDs in the message.
 
 ## Local data
 
