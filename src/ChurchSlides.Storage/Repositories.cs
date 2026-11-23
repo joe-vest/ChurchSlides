@@ -1,4 +1,5 @@
 using ChurchSlides.Domain;
+using ChurchSlides.Domain.Model;
 using ChurchSlides.Domain.Serialization;
 
 namespace ChurchSlides.Storage;
@@ -59,14 +60,60 @@ internal sealed class ObjectRepository<T>(
     public SaveResult Delete(Id<T> id, FileStamp? expected) => files.Delete<T>(PathFor(id), expected);
 }
 
+/// <summary>What <see cref="IServiceStateRepository.Load"/> found. State is always usable: the defaults when the file is missing or damaged.</summary>
+public sealed record ServiceStateLoad(ServiceState State, LoadStatus Status, string? Error);
+
+/// <summary>One state file per Service, <c>service-state/{service id}.json</c> (LIB-013). The last write wins.</summary>
+public interface IServiceStateRepository
+{
+    /// <summary>Missing gives the defaults with status Ok. Damaged gives the defaults with status Unreadable, and the next save repairs it.</summary>
+    ServiceStateLoad Load(Id<Service> serviceId);
+
+    SaveResult Save(ServiceState state);
+
+    SaveResult Delete(Id<Service> serviceId);
+}
+
+internal sealed class ServiceStateRepository(string folder, LibraryFileStore files) : IServiceStateRepository
+{
+    private string PathFor(Id<Service> id) => Path.Combine(folder, id + ".json");
+
+    public ServiceStateLoad Load(Id<Service> serviceId)
+    {
+        var defaults = ServiceState.Defaults(serviceId);
+        if (files.Load<ServiceState>(PathFor(serviceId)) is not { } loaded)
+            return new(defaults, LoadStatus.Ok, null);
+
+        var result = loaded.Result;
+        return new(result.Value ?? defaults, result.Status, result.Error);
+    }
+
+    public SaveResult Save(ServiceState state)
+    {
+        var problems = SaveValidation.Validate(state);
+        if (problems.Count > 0) return new(SaveOutcome.Invalid, Problems: problems);
+        return files.Save(PathFor(state.ServiceId), state, expected: null, overwrite: true);
+    }
+
+    public SaveResult Delete(Id<Service> serviceId) =>
+        files.Load<ServiceState>(PathFor(serviceId)) is { } loaded
+            ? files.Delete<ServiceState>(loaded.Path, loaded.Stamp)
+            : new(SaveOutcome.Unchanged);
+}
+
 internal sealed class SingletonRepository<T>(
     string path,
     Func<T, IReadOnlyList<string>> validate,
-    LibraryFileStore files) : ISingletonRepository<T> where T : class, new()
+    LibraryFileStore files,
+    Func<T, T>? afterLoad = null) : ISingletonRepository<T> where T : class, new()
 {
-    public LoadedFile<T> Load() =>
-        files.Load<T>(path)
-        ?? new(new(LoadStatus.Ok, SchemaVersions.Current<T>(), new T(), null), null, path, true);
+    public LoadedFile<T> Load()
+    {
+        var loaded = files.Load<T>(path)
+            ?? new(new(LoadStatus.Ok, SchemaVersions.Current<T>(), new T(), null), null, path, true);
+        if (afterLoad is null || loaded.Result.Value is not { } value) return loaded;
+        return loaded with { Result = loaded.Result with { Value = afterLoad(value) } };
+    }
 
     public SaveResult Save(T value, FileStamp? expected)
     {

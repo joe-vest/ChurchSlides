@@ -56,7 +56,7 @@ public class LibraryFilesTests
         Assert.Equal(2, lib.Services.Load(service.Id)!.Result.Value!.Items.Length);
         Assert.Equal("Hymns", lib.Templates.Load(template.Id)!.Result.Value!.Name);
         Assert.Equal("Weekly", lib.ServiceTemplates.Load(serviceTemplate.Id)!.Result.Value!.Name);
-        Assert.Equal(2, lib.Categories.Load().Result.Value!.Categories.Length);
+        Assert.Equal(3, lib.Categories.Load().Result.Value!.Categories.Length);
         Assert.Equal("123456", lib.Settings.Load().Result.Value!.CcliLicenseNumber);
     }
 
@@ -85,7 +85,7 @@ public class LibraryFilesTests
         var categories = lib.Categories.Load();
         var settings = lib.Settings.Load();
 
-        Assert.Empty(categories.Result.Value!.Categories);
+        Assert.Equal(BuiltInCategories.ScriptureId, categories.Result.Value!.Categories.Single().Id); // CAT-010
         Assert.Null(categories.Stamp);
         Assert.Equal(CanvasAspect.Ratio16x10, settings.Result.Value!.Canvas);
         Assert.False(Directory.Exists(temp.Path), "opening and reading must not create folders");
@@ -140,8 +140,9 @@ public class LibraryFilesTests
         lib.Shows.Delete(Samples.I<Show>(1), lib.Shows.Load(Samples.I<Show>(1))!.Stamp);
         lib.Categories.Save(Samples.Categories(), null);
         lib.Settings.Save(new LibrarySettings(), null);
+        lib.ServiceStates.Save(ServiceState.Defaults(Samples.I<Service>(7)));
 
-        Assert.Equal(["categories.json", "library.json"], temp.Files());
+        Assert.Equal(["categories.json", "library.json", $"service-state/{Samples.I<Service>(7)}.json"], temp.Files());
     }
 
     [Fact]

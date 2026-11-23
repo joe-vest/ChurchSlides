@@ -11,6 +11,7 @@ public interface ILibrary
     IObjectRepository<Service> Services { get; }
     IObjectRepository<Template> Templates { get; }
     IObjectRepository<ServiceTemplate> ServiceTemplates { get; }
+    IServiceStateRepository ServiceStates { get; }
     ISingletonRepository<CategoryList> Categories { get; }
     ISingletonRepository<LibrarySettings> Settings { get; }
 }
@@ -27,7 +28,9 @@ public sealed class FolderLibrary : ILibrary
         Services = new ObjectRepository<Service>(Layout.ServicesFolder, s => s.Id, SaveValidation.Validate, files);
         Templates = new ObjectRepository<Template>(Layout.TemplatesFolder, t => t.Id, SaveValidation.Validate, files);
         ServiceTemplates = new ObjectRepository<ServiceTemplate>(Layout.ServiceTemplatesFolder, t => t.Id, SaveValidation.Validate, files);
-        Categories = new SingletonRepository<CategoryList>(Layout.CategoriesFile, SaveValidation.Validate, files);
+        ServiceStates = new ServiceStateRepository(Layout.ServiceStateFolder, files);
+        // CAT-010: the Scripture Category is added in memory. Loading never writes a file.
+        Categories = new SingletonRepository<CategoryList>(Layout.CategoriesFile, SaveValidation.Validate, files, BuiltInCategories.EnsureIn);
         Settings = new SingletonRepository<LibrarySettings>(Layout.SettingsFile, SaveValidation.Validate, files);
     }
 
@@ -36,6 +39,7 @@ public sealed class FolderLibrary : ILibrary
     public IObjectRepository<Service> Services { get; }
     public IObjectRepository<Template> Templates { get; }
     public IObjectRepository<ServiceTemplate> ServiceTemplates { get; }
+    public IServiceStateRepository ServiceStates { get; }
     public ISingletonRepository<CategoryList> Categories { get; }
     public ISingletonRepository<LibrarySettings> Settings { get; }
 }

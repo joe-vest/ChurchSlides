@@ -93,7 +93,7 @@ internal static class Samples
 
     public static CategoryList Categories() => new()
     {
-        Categories = [new Category { Id = I<Category>(2), Name = "Hymns" }, new Category { Id = I<Category>(6), Name = "Welcome" }],
+        Categories = [new Category { Id = I<Category>(2), Name = "Hymns" }, new Category { Id = I<Category>(6), Name = "Welcome" }, BuiltInCategories.Scripture],
     };
 
 }

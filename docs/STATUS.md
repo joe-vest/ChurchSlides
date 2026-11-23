@@ -1,7 +1,7 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23
+Last updated: 2026-11-23 (C1.3c done)
 
 ## Chunks
 
@@ -15,7 +15,7 @@ Last updated: 2026-11-23
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
-| C1.3c | Model and storage changes from the document review | planned (docs/plans/C1.3c.md, agreed), next to execute |
+| C1.3c | Model and storage changes from the document review | done: C1.3c-1 domain, C1.3c-2 storage (313 domain, 86 storage tests, see docs/plans/C1.3c.md) |
 | C1.4 | Library watching and search | todo |
 | C1.5 | Navigation engine (review gate) | todo |
 | C2.1 | Slide renderer and image pipeline | todo |
@@ -59,7 +59,10 @@ Last updated: 2026-11-23
 
 ## Follow-ups (found, out of scope of the chunk that found them)
 
-- C1.3c: code changes from the document and plan reviews: `Service.Mode` moves to the Service state file in `service-state/`; remove `LibrarySettings.DefaultScriptureTemplateId`; add the built-in Scripture Category; add the `Normal` command; trigger validity per level (SlideDisplayed/SlideEnded now valid on a Service Item); Timer name rule; effective skip list shared by `SlidePosition` and navigation (cued Shows ignore stale skips); `TimerTokenNotAlone` problem; null `WarningColorHex` means no color change. See DEVELOPMENT-PLAN C1.3c.
+- C1.4 also watches `service-state/` (last-write-wins files; a change from the other machine should reload the Mode).
+- C1.5: navigation must use `SkipRules.InForce(item, show)` for the skip list, never `ShowItem.SkippedSlideIds` directly.
+- C2.5: deleting a Service must also call `ServiceStates.Delete` (a state file with no Service is harmless but untidy).
+- C5.2: the Action editor must only offer triggers allowed at the level (`ActionRules.IsAllowed`); storage already refuses the rest.
 - C1.4: duplicate-ID detection (LIB-009) compares top-level file IDs only. Duplicated Services legitimately share the IDs of their Show Copies and Scripture slides.
 - C4.2 (cue editor): adding the first Cue to a Show with Skipped marks. FRD 0.3 says the marks and any Service skip lists are then ignored (SVC-025). The cue editor should say so.
 - C1.5: navigation must honor `ShowItem.SkippedSlideIds` for both reference and copy items (except for cued Shows), and allow a direct jump to a skipped slide (LIVE-017).

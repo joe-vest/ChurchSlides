@@ -163,7 +163,7 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 
 #### C1.4: Library watching and search. Size M
 - **FRD:** LIB-006/007/009/010/011, CAT-003..006.
-- **Do:** debounced `FileSystemWatcher` pipeline; self-write suppression; conflict-copy and duplicate-ID detection (top-level file IDs only: Show Copies and Scripture slides inside Services legitimately share IDs after a Service is duplicated); in-memory search index with incremental updates; Library-unavailable handling.
+- **Do:** debounced `FileSystemWatcher` pipeline (also watching `service-state/`, whose files are last-write-wins); self-write suppression; conflict-copy and duplicate-ID detection (top-level file IDs only: Show Copies and Scripture slides inside Services legitimately share IDs after a Service is duplicated); in-memory search index with incremental updates; Library-unavailable handling.
 - **Tests:** simulated bursts of file events, Drive-style temp files, duplicate IDs; search ranking, accent insensitivity, filter by Kind/Category. Includes AS-08 (edit conflict) at the storage level.
 
 #### C1.5: Navigation engine. Size M. **Review gate**

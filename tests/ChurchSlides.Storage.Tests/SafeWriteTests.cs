@@ -230,13 +230,13 @@ public class SafeWriteTests
         using var temp = new TempFolder();
         var lib = new FolderLibrary(temp.Path);
         var first = lib.Categories.Save(Samples.Categories(), null);
-        var other = new CategoryList { Categories = [new Category { Id = Samples.I<Category>(99), Name = "Elsewhere" }] };
+        var other = new CategoryList { Categories = [new Category { Id = Samples.I<Category>(99), Name = "Elsewhere" }, BuiltInCategories.Scripture] };
         new FolderLibrary(temp.Path).Categories.Save(other, first.Stamp);
 
         var result = lib.Categories.Save(Samples.Categories(), first.Stamp);
 
         Assert.Equal(SaveOutcome.Conflict, result.Outcome);
-        Assert.Equal("Elsewhere", lib.Categories.Load().Result.Value!.Categories.Single().Name);
+        Assert.Contains(lib.Categories.Load().Result.Value!.Categories, c => c.Name == "Elsewhere");
     }
 
     [Fact]

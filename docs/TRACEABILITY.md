@@ -75,7 +75,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | TPL-025 | SHOULD | C1.2 | logic done (C1.2a); UI in a later chunk |
 | TPL-026 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | TPL-027 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
-| VAR-001 | MUST | C1.2 | partial (C1.2a: name rule; uniqueness in C3.2) |
+| VAR-001 | MUST | C1.2, C1.3c, C3.2 | logic done (name rule C1.2a; uniqueness checked on save C1.3c); UI in C3.2 |
 | VAR-002 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | VAR-003 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | VAR-004 | MUST | C1.2 | logic done (C1.2b); UI in a later chunk |
@@ -93,7 +93,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SVC-022 | MUST | C1.2, C2.5 | logic done (C1.2b); UI in a later chunk |
 | SVC-023 | MUST | C1.2, C2.5 | partial (C1.2b: data kept; marker UI in C2.5) |
 | SVC-024 | SHOULD | C2.5 | logic done (C1.2b); UI in a later chunk |
-| SVC-025 | MUST | C1.2, C2.5 | logic done (C1.2b); UI in a later chunk |
+| SVC-025 | MUST | C1.2, C1.3c, C2.5 | logic done (C1.2b; shared `SkipRules.InForce` C1.3c); UI in a later chunk |
 | SVC-026 | MUST | C1.2, C2.5 | todo |
 | SVC-030 | MUST | C3.3 | partial (C1.2b: instantiate logic; UI in C3.3) |
 | SVC-031 | MUST | C3.3 | todo |
@@ -129,7 +129,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | TMR-006 | MUST | C5.1 | todo |
 | TMR-007 | MUST | C5.1 | todo |
 | TMR-008 | MUST | C5.1 | todo |
-| TMR-009 | MUST | C1.3c (problem report), C2.3 (editor), C5.1 | todo |
+| TMR-009 | MUST | C1.3c (problem report), C2.3 (editor), C5.1 | partial (C1.3c: TimerTokenNotAlone problem) |
 | TMR-010 | MUST | C5.1 | todo |
 | TMR-011 | MUST | C5.1 | todo |
 | TMR-012 | MUST | C5.1 | todo |
@@ -141,13 +141,13 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | ACT-002 | MUST | C5.2 | partial (C1.1 model, C1.2b id remap; processor in C5.2) |
 | ACT-003 | MUST | C5.2 | todo |
 | ACT-004 | MUST | C5.2 | todo |
-| ACT-010 | MUST | C5.2 | todo |
-| ACT-011 | MUST | C5.2 | todo |
-| ACT-012 | MUST | C5.2 | todo |
-| ACT-013 | MUST | C5.2 | todo |
-| ACT-014 | MUST | C5.2 | todo |
-| ACT-015 | MUST | C5.2 | todo |
-| ACT-016 | SHOULD | C5.2 | todo |
+| ACT-010 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-011 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-012 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-013 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-014 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-015 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-016 | SHOULD | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
 | ACT-020 | MUST | C5.2 | todo |
 | ACT-021 | MUST | C5.2 | todo |
 | ACT-022 | MUST | C5.2 | todo |
@@ -166,14 +166,14 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | ACT-042 | MUST | C5.2 | todo |
 | ACT-043 | SHOULD | C5.2 | todo |
 | ACT-044 | MUST NOT | C5.2 | todo |
-| MODE-001 | MUST | C6.1 | todo |
+| MODE-001 | MUST | C1.3c, C6.1 | partial (C1.3c: Mode lives in the state file, not the Service) |
 | MODE-002 | MUST | C6.1 | todo |
 | MODE-003 | MUST | C6.1 | todo |
 | MODE-004 | MUST | C6.1 | todo |
 | CCLI-001 | MUST | C6.1 | todo |
 | CCLI-002 | MUST | C6.1 | todo |
 | CCLI-003 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
-| CCLI-004 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
+| CCLI-004 | MUST | C1.2, C1.3c | logic done (C1.2a; cued Shows ignore stale skips C1.3c); UI in a later chunk |
 | CCLI-005 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | CCLI-010 | MUST | C6.1 | todo |
 | CCLI-011 | MUST | C6.1 | todo |
@@ -235,7 +235,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SCR-010 | MUST | C7.2 | todo |
 | SCR-011 | MUST | C7.2 | todo |
 | SCR-012 | MUST | C7.2 | todo |
-| SCR-013 | MUST | C1.3c, C7.2 | todo |
+| SCR-013 | MUST | C1.3c, C7.2 | partial (C1.3c: built-in Scripture Category; generation in C7.2) |
 | SCR-014 | COULD | C7.2 | todo |
 | SCR-015 | COULD | C7.2 | todo |
 | SCR-016 | MUST NOT | C7.2 | todo |
@@ -263,14 +263,14 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SVC-028 | SHOULD | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
 | LIVE-017 | MUST | C1.5, C2.2 | todo |
 | TPL-014 | MUST | C1.2a | logic done (C1.2a) |
-| LIB-013 | MUST | C1.3c, C6.1, C6.2 | todo |
-| CAT-010 | MUST | C1.3c, C2.4, C7.2 | todo |
+| LIB-013 | MUST | C1.3c, C6.1, C6.2 | partial (C1.3c: state file and repository; Mode switch and CCLI flows later) |
+| CAT-010 | MUST | C1.3c, C2.4, C7.2 | partial (C1.3c: added on load, save refused without it; UI later) |
 | LIVE-018 | MUST | C1.5, C2.2 | todo |
 | LIVE-041 | MUST | C1.5 | todo |
 | MODE-005 | MUST | C1.5, C2.2 | todo |
 | ACT-005 | MUST | C1.5, C5.2 | todo |
 | ACT-006 | MUST | C5.2 | todo |
-| ACT-033 | MUST | C1.3c, C5.2 | todo |
+| ACT-033 | MUST | C1.3c, C5.2 | partial (C1.3c: Normal command in the model; behavior in C5.2) |
 | AUD-021 | MUST | C4.1 | todo |
 | TMR-017 | MUST | C5.1 | todo |
 | CCLI-018 | MUST | C6.1 | todo |

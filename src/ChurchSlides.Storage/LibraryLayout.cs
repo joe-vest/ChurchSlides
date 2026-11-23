@@ -17,5 +17,6 @@ public sealed class LibraryLayout
     public string ServicesFolder => Path.Combine(Root, "services");
     public string TemplatesFolder => Path.Combine(Root, "templates");
     public string ServiceTemplatesFolder => Path.Combine(Root, "service-templates");
+    public string ServiceStateFolder => Path.Combine(Root, "service-state");
     public string MediaFolder => Path.Combine(Root, "media");
 }

@@ -76,7 +76,8 @@ internal sealed class LibraryFileStore(AtomicFileWriter writer, MigrationChain m
     }
 
     /// <param name="expected">The stamp from when the object was loaded. Null means the file must not exist yet.</param>
-    public SaveResult Save<T>(string path, T value, FileStamp? expected) where T : class
+    /// <param name="overwrite">The last write wins (LIB-013): skips the changed-elsewhere check. Newer-version and unchanged checks still apply.</param>
+    public SaveResult Save<T>(string path, T value, FileStamp? expected, bool overwrite = false) where T : class
     {
         try
         {
@@ -85,14 +86,14 @@ internal sealed class LibraryFileStore(AtomicFileWriter writer, MigrationChain m
             var disk = Read(path);
             if (disk is null)
             {
-                if (expected is not null) return new(SaveOutcome.Conflict, Error: "The file was deleted elsewhere since it was loaded.");
+                if (expected is not null && !overwrite) return new(SaveOutcome.Conflict, Error: "The file was deleted elsewhere since it was loaded.");
             }
             else
             {
                 if (ReadVersion(disk.Value.Bytes, out _) > SchemaVersions.Current<T>())
                     return new(SaveOutcome.ReadOnlyNewer, DiskStamp: disk.Value.Stamp,
                         Error: "The file was saved by a newer version of ChurchSlides and can't be changed by this one.");
-                if (!disk.Value.Stamp.SameContentAs(expected))
+                if (!overwrite && !disk.Value.Stamp.SameContentAs(expected))
                     return new(SaveOutcome.Conflict, DiskStamp: disk.Value.Stamp, Error: "The file was changed elsewhere since it was loaded.");
                 if (disk.Value.Bytes.AsSpan().SequenceEqual(bytes))
                     return new(SaveOutcome.Unchanged, Stamp: disk.Value.Stamp);
