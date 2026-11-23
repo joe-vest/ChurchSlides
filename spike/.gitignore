@@ -2,3 +2,4 @@
 out/
 spike-state.json
 spike-results-*.md
+spike-cache/

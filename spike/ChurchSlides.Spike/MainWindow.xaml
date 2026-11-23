@@ -57,6 +57,72 @@
         </ScrollViewer>
       </TabItem>
 
+      <TabItem x:Name="SlidesTab" Header="Slides (S2)">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="SlidesPanel" Margin="8">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+              <Button x:Name="RunSlidesButton" Content="Run slide test" Padding="10,4" Click="RunSlides_Click" />
+              <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"
+                         Text="About 2 minutes, all backgrounds: 60 Cuts, then 60 crossfades with pre-render on each thread. Part of the automatic run too." />
+            </StackPanel>
+            <TextBlock TextWrapping="Wrap"
+                       Text="Opens the Output on the monitor chosen on the Output tab and steps through hymn slides over the chosen backgrounds. Backgrounds and fit apply when you open the Output. Keys while this tab or the Output has focus: Right/Left, B (Black), C (Clear), L (Logo, the file named logo.* in the media folder), Esc closes the Output." />
+            <Grid Margin="0,8,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Backgrounds (select one or more):" />
+                <ListBox x:Name="BackgroundList" Height="150" SelectionMode="Extended" Margin="0,4,8,0" />
+              </DockPanel>
+              <StackPanel Grid.Column="1">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="Fit:" Width="90" VerticalAlignment="Center" />
+                  <ComboBox x:Name="FitBox" Width="100" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                  <TextBlock Text="Transition:" Width="90" VerticalAlignment="Center" />
+                  <RadioButton x:Name="CutRadio" Content="Cut" GroupName="Transition" VerticalAlignment="Center" />
+                  <RadioButton x:Name="FadeRadio" Content="Crossfade" GroupName="Transition" IsChecked="True" Margin="12,0,0,0" VerticalAlignment="Center" />
+                  <Slider x:Name="FadeSlider" Minimum="100" Maximum="1000" Value="300" TickFrequency="50" IsSnapToTickEnabled="True" Width="160" Margin="12,0,0,0" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Value, ElementName=FadeSlider, StringFormat={}{0:F0} ms}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                  <TextBlock Text="Pre-render:" Width="90" VerticalAlignment="Center" />
+                  <RadioButton x:Name="UiThreadRadio" Content="UI thread" GroupName="PreRender" VerticalAlignment="Center" />
+                  <RadioButton x:Name="RenderThreadRadio" Content="Render thread" GroupName="PreRender" IsChecked="True" Margin="12,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <WrapPanel Margin="0,10,0,0">
+                  <Button Content="Open Output" Padding="10,4" Click="OpenSlides_Click" />
+                  <Button Content="Close Output" Padding="10,4" Margin="8,0,0,0" Click="CloseSlides_Click" />
+                  <Button Content="◀ Previous" Padding="10,4" Margin="16,0,0,0" Click="Previous_Click" />
+                  <Button Content="Next ▶" Padding="10,4" Margin="8,0,0,0" Click="Next_Click" />
+                  <Button Content="Black" Padding="10,4" Margin="16,0,0,0" Click="Black_Click" />
+                  <Button Content="Clear" Padding="10,4" Margin="8,0,0,0" Click="Clear_Click" />
+                  <Button Content="Logo" Padding="10,4" Margin="8,0,0,0" Click="Logo_Click" />
+                </WrapPanel>
+              </StackPanel>
+            </Grid>
+            <TextBlock x:Name="SlidesResultText" Margin="0,8,0,0" FontFamily="Consolas" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Memory (S6)">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="8">
+            <StackPanel Orientation="Horizontal">
+              <Button x:Name="RunMemoryButton" Content="Run memory test" Padding="10,4" Click="RunMemory_Click" />
+              <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Text="Pass: working set ≤ 300 MB while presenting (PLT-005)." />
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                       Text="Times decoding each background, then loads a typical Service (3 Songs, 5 Presentations, a Scripture item: 47 slides) with thumbnails, and presents it on the Output monitor with a 3-slide pre-render window. About a minute. Part of the automatic run too." />
+            <TextBlock x:Name="MemoryResultText" Margin="0,8,0,0" FontFamily="Consolas" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
       <TabItem Header="Startup (S7)">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel x:Name="StartupPanel" Margin="8">

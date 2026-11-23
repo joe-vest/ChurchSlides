@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
@@ -7,48 +6,14 @@ using System.Windows.Media;
 
 namespace ChurchSlides.Spike;
 
-/// <summary>
-/// S1: a borderless topmost window placed at a monitor's exact pixel bounds with SetWindowPos,
-/// showing a test pattern. Esc closes it.
-/// </summary>
-public sealed class OutputTestWindow : Window
+/// <summary>S1: the monitor window showing a test pattern. Esc closes it.</summary>
+public sealed class OutputTestWindow : MonitorWindow
 {
-    private readonly MonitorInfo monitor;
-    private readonly Stopwatch sinceShow = new();
-    private readonly TaskCompletionSource rendered = new();
-    private IntPtr hwnd;
-
     public OutputTestWindow(MonitorInfo monitor)
+        : base(monitor)
     {
-        this.monitor = monitor;
         Title = "ChurchSlides spike: Output test";
-        WindowStyle = WindowStyle.None;
-        ResizeMode = ResizeMode.NoResize;
-        Topmost = true;
-        ShowInTaskbar = false;
-        ShowActivated = false;
-        Background = Brushes.Black;
-        WindowStartupLocation = WindowStartupLocation.Manual;
-
-        // A first guess in DIPs (at 100% they are pixels), so the window doesn't appear
-        // elsewhere first. SetWindowPos then makes it exact.
-        Left = monitor.Bounds.X;
-        Top = monitor.Bounds.Y;
-        Width = monitor.Bounds.Width;
-        Height = monitor.Bounds.Height;
-
         Content = new TestPattern(monitor);
-        SourceInitialized += (_, _) =>
-        {
-            hwnd = new WindowInteropHelper(this).Handle;
-            PlaceExactly();
-        };
-        Loaded += (_, _) => PlaceExactly();
-        ContentRendered += (_, _) =>
-        {
-            ShowToFirstFrameMs = sinceShow.Elapsed.TotalMilliseconds;
-            rendered.TrySetResult();
-        };
         KeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
@@ -56,39 +21,25 @@ public sealed class OutputTestWindow : Window
         };
     }
 
-    public double ShowToFirstFrameMs { get; private set; }
-    public Task Rendered => rendered.Task;
-
-    public void ShowTimed()
-    {
-        sinceShow.Restart();
-        Show();
-    }
-
     /// <summary>The window's actual rectangle and client size in pixels, compared with the monitor.</summary>
     public IReadOnlyList<Figure> Measure()
     {
-        Native.GetWindowRect(hwnd, out var window);
-        Native.GetClientRect(hwnd, out var client);
+        Native.GetWindowRect(Handle, out var window);
+        Native.GetClientRect(Handle, out var client);
         var windowRect = window.ToPixelRect();
         var clientRect = client.ToPixelRect();
-        var exact = windowRect == monitor.Bounds && clientRect.Width == monitor.Bounds.Width && clientRect.Height == monitor.Bounds.Height;
+        var m = Monitor;
+        var exact = windowRect == m.Bounds && clientRect.Width == m.Bounds.Width && clientRect.Height == m.Bounds.Height;
         var source = PresentationSource.FromVisual(this) as HwndSource;
         return
         [
-            new("Output monitor", $"{monitor.DeviceName} {monitor.Bounds}, {monitor.DpiX} dpi, {monitor.RefreshHz} Hz"),
+            new("Output monitor", $"{m.DeviceName} {m.Bounds}, {m.DpiX} dpi, {m.RefreshHz} Hz"),
             new("Window rectangle (GetWindowRect)", windowRect.ToString()),
             new("Client size (GetClientRect)", $"{clientRect.Width}×{clientRect.Height}"),
             new("Matches monitor exactly", exact ? "yes" : "NO"),
             new("Show to first frame", $"{ShowToFirstFrameMs.ToString("F0", CultureInfo.InvariantCulture)} ms"),
             new("Window render mode", source?.CompositionTarget.RenderMode.ToString() ?? "?"),
         ];
-    }
-
-    private void PlaceExactly()
-    {
-        var b = monitor.Bounds;
-        Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, b.X, b.Y, b.Width, b.Height, Native.SWP_NOACTIVATE);
     }
 }
 

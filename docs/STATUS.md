@@ -1,14 +1,14 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C1.5 done)
+Last updated: 2026-11-23 (C0.2 done)
 
 ## Chunks
 
 | Chunk | Title | Status |
 |---|---|---|
 | C0.1 | Repository and documentation setup | done |
-| C0.2 | Spike A: output and crossfade (one combined spike program) | C0.2a shell done (`spike/`, System S8, Output S1, Startup S7 tabs); next: C0.2b slides (see docs/plans/C0.2.md) |
+| C0.2 | Spike A: output and crossfade (one combined spike program) | done: C0.2a shell (System S8, Output S1, Startup S7), C0.2b slides (Slides S2, Memory S6). Ready for G0 once C0.3 and C0.4 have added their tabs |
 | C0.3 | Spike B: rich text | todo |
 | C0.4 | Spike C: audio and timer | todo |
 | G0 | Owner runs the spike program on the church machine | blocked on C0.2-C0.4 |
@@ -74,6 +74,7 @@ Last updated: 2026-11-23 (C1.5 done)
 - Optional: add an `AssemblyInfo`/version stamp when packaging (C9.3).
 - Markdown lint warnings in docs (cosmetic).
 - Spike (before G0): the self-contained publish ships the runtime pack the installed SDK knows (.NET 10.0.3 with SDK 10.0.103), older than the dev PC's runtime (10.0.15). Update the SDK before publishing for G0. The spike's "GPU driver" line reads the first display-adapter registry key only; fine on the church PC's single GPU.
+- For the G0 analysis (C0.2b, development PC at 3840×2160): placing a decoded background into an output-size bitmap costs far more than decoding it (about 120 ms against 7-28 ms), and UI-thread pre-render dropped about 2 frames per 300 ms crossfade against 0.6 on the render thread. If the church figures agree, C2.1 could draw the decoded background directly instead of rasterizing it, and pre-render on the render thread. The spike ignores EXIF orientation.
 
 ## Known issues
 

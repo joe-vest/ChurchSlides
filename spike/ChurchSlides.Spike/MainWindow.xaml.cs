@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.Win32;
 
@@ -12,7 +14,10 @@ public partial class MainWindow : Window
     private readonly Metrics metrics = new();
     private readonly FrameCounter frames = new();
     private readonly DispatcherTimer readout;
+    private readonly RenderThread renderThread = new();
     private OutputTestWindow? pattern;
+    private SlideSession? slides;
+    private bool testRunning;
     private bool firstFrameSeen;
 
     public MainWindow()
@@ -23,15 +28,25 @@ public partial class MainWindow : Window
         readout.Start();
 
         OutputPanel.Children.Add(new ChecklistPanel(results, Results.S1));
+        SlidesPanel.Children.Add(new ChecklistPanel(results, Results.S2));
         StartupPanel.Children.Add(new ChecklistPanel(results, Results.S7));
+        FitBox.ItemsSource = Enum.GetValues<FitMode>();
+        FitBox.SelectedItem = FitMode.Fill;
         ShowMediaFolder();
         LoadMonitors();
         RefreshSystem();
 
         ContentRendered += OnContentRendered;
+        PreviewKeyDown += (_, e) =>
+        {
+            if (Tabs.SelectedItem == SlidesTab && e.OriginalSource is not TextBox && SlideKey(e.Key))
+                e.Handled = true;
+        };
         Closing += (_, _) =>
         {
             pattern?.Close();
+            slides?.Output.Close();
+            renderThread.Dispose();
             readout.Stop();
             metrics.Dispose();
             TrySave();
@@ -107,9 +122,7 @@ public partial class MainWindow : Window
                 pattern = null;
         };
         pattern = window;
-        window.ShowTimed();
-
-        if (await Task.WhenAny(window.Rendered, Task.Delay(5000)) != window.Rendered)
+        if (!await window.ShowAndWait())
         {
             OutputResultText.Text = "The test pattern didn't render within 5 s.";
             results.SetFigures(Results.S1, [new Figure("Output window", "did not render within 5 s")]);
@@ -142,6 +155,12 @@ public partial class MainWindow : Window
             LoadMonitors();
             if (MonitorBox.SelectedItem is MonitorInfo monitor)
                 await MeasureOutput(monitor, closeAfter: true);
+            TrySave();
+
+            // Memory first, so its "first read" decode times come before anything else reads the files.
+            await RunSlideTest(Results.S6, MemoryResultText, t => t.RunS6());
+            TrySave();
+            await RunSlideTest(Results.S2, SlidesResultText, t => t.RunS2());
 
             var path = TrySave();
             AutoStatusText.Text = path is null ? "Done, but the results couldn't be saved." : $"Done. Saved {Path.GetFileName(path)}.";
@@ -152,6 +171,154 @@ public partial class MainWindow : Window
             RunAutoButton.IsEnabled = true;
         }
     }
+
+    // ---- Slides (S2) and Memory (S6) ----
+
+    private async void RunSlides_Click(object sender, RoutedEventArgs e)
+    {
+        await RunSlideTest(Results.S2, SlidesResultText, t => t.RunS2());
+        TrySave();
+    }
+
+    private async void RunMemory_Click(object sender, RoutedEventArgs e)
+    {
+        await RunSlideTest(Results.S6, MemoryResultText, t => t.RunS6());
+        TrySave();
+    }
+
+    /// <summary>Runs an automatic slide test on the Output monitor and records its figures.</summary>
+    private async Task RunSlideTest(string section, TextBlock show, Func<SlideTests, Task<List<Figure>>> run)
+    {
+        if (testRunning)
+            return;
+        var media = Media.Scan(results.State.MediaFolder);
+        var problem = MonitorBox.SelectedItem is not MonitorInfo ? "no monitor found"
+            : media.Backgrounds.Count == 0 ? "no backgrounds: choose the media folder (top right)"
+            : null;
+        if (problem is not null)
+        {
+            results.SetFigures(section, [new Figure("Not run", problem)]);
+            show.Text = $"Not run: {problem}.";
+            return;
+        }
+
+        testRunning = true;
+        RunSlidesButton.IsEnabled = RunMemoryButton.IsEnabled = false;
+        pattern?.Close();
+        slides?.Output.Close();
+        try
+        {
+            var tests = new SlideTests((MonitorInfo)MonitorBox.SelectedItem, media, renderThread, metrics, s => AutoStatusText.Text = s);
+            var figures = await run(tests);
+            results.SetFigures(section, figures);
+            show.Text = string.Join(Environment.NewLine, figures.Select(f => $"{f.Name}: {f.Value}"));
+            AutoStatusText.Text = $"{section}: done.";
+        }
+        finally
+        {
+            testRunning = false;
+            RunSlidesButton.IsEnabled = RunMemoryButton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>The manual Output: the window, the presenter and a pre-renderer for each place.</summary>
+    private sealed record SlideSession(SlideOutput Output, Presenter Presenter, PreRenderer OnUiThread, PreRenderer OnRenderThread);
+
+    private async void OpenSlides_Click(object sender, RoutedEventArgs e)
+    {
+        if (testRunning || MonitorBox.SelectedItem is not MonitorInfo monitor)
+            return;
+        var media = Media.Scan(results.State.MediaFolder);
+        var chosen = BackgroundList.SelectedItems.Cast<ListBoxItem>().Select(i => (string)i.Tag).ToList();
+        if (chosen.Count == 0)
+            chosen = [.. media.Backgrounds];
+        if (chosen.Count == 0)
+        {
+            SlidesResultText.Text = "Choose the media folder (top right) first.";
+            return;
+        }
+
+        slides?.Output.Close();
+        pattern?.Close();
+        int w = monitor.Bounds.Width, h = monitor.Bounds.Height;
+        var output = new SlideOutput(monitor, media.LogoBitmap(w, h));
+        var onUi = new PreRenderer(new SlideFactory(w, h), null);
+        var onThread = new PreRenderer(new SlideFactory(w, h), renderThread);
+        var presenter = new Presenter(output, TestContent.HymnSlides(chosen, (FitMode)FitBox.SelectedItem), onThread, new FrameMonitor(monitor.RefreshHz));
+        var session = new SlideSession(output, presenter, onUi, onThread);
+        output.KeyPressed += key => SlideKey(key);
+        output.Closed += (_, _) =>
+        {
+            if (slides == session)
+                slides = null;
+        };
+        slides = session;
+
+        if (!await output.ShowAndWait())
+        {
+            SlidesResultText.Text = "The Output didn't render within 5 s.";
+            output.Close();
+            return;
+        }
+        await GoTo(0);
+    }
+
+    private void CloseSlides_Click(object sender, RoutedEventArgs e) => slides?.Output.Close();
+
+    private async void Previous_Click(object sender, RoutedEventArgs e) => await Step(-1);
+
+    private async void Next_Click(object sender, RoutedEventArgs e) => await Step(1);
+
+    private void Black_Click(object sender, RoutedEventArgs e) => SlideKey(Key.B);
+
+    private void Clear_Click(object sender, RoutedEventArgs e) => SlideKey(Key.C);
+
+    private void Logo_Click(object sender, RoutedEventArgs e) => SlideKey(Key.L);
+
+    /// <summary>The operator keys (as the real hotkeys). True if the key was one of them.</summary>
+    private bool SlideKey(Key key)
+    {
+        if (slides?.Output is not { } output)
+            return false;
+        switch (key)
+        {
+            case Key.Right or Key.PageDown:
+                _ = Step(1);
+                return true;
+            case Key.Left or Key.PageUp:
+                _ = Step(-1);
+                return true;
+            case Key.B:
+                output.SetBlack(!output.IsBlack);
+                return true;
+            case Key.C:
+                output.SetClear(!output.IsClear);
+                return true;
+            case Key.L:
+                output.SetLogo(!output.IsLogo);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private Task Step(int by) => slides is null ? Task.CompletedTask : GoTo(slides.Presenter.Index + by);
+
+    private async Task GoTo(int index)
+    {
+        if (slides is not { } session)
+            return;
+        var presenter = session.Presenter;
+        presenter.Renderer = UiThreadRadio.IsChecked == true ? session.OnUiThread : session.OnRenderThread;
+        var fadeMs = FadeRadio.IsChecked == true ? (int)FadeSlider.Value : 0;
+        if (await presenter.GoTo(index, fadeMs) is { } result)
+            SlidesResultText.Text = $"Slide {index + 1} of {presenter.Count}. {result} Pre-render on the {presenter.Renderer.Where}.";
+    }
+
+    private void LoadBackgrounds() =>
+        BackgroundList.ItemsSource = Media.Scan(results.State.MediaFolder).Backgrounds
+            .Select(p => new ListBoxItem { Content = Path.GetFileName(p), Tag = p })
+            .ToList();
 
     // ---- Results ----
 
@@ -195,8 +362,11 @@ public partial class MainWindow : Window
         TrySave();
     }
 
-    private void ShowMediaFolder() =>
+    private void ShowMediaFolder()
+    {
         MediaFolderText.Text = results.State.MediaFolder is { } folder ? $"Media: {folder}" : "Media: not chosen";
+        LoadBackgrounds();
+    }
 
     // ---- Live readouts ----
 
