@@ -21,6 +21,14 @@ public static class SkipRules
     public static bool CanSkip(Show show) => show.Audio is not { Cues.Length: > 0 };
 
     /// <summary>
+    /// The skip list that actually applies to a Service Item (SVC-025): its own list, or none for a Show whose audio
+    /// has Cues, because the Cues need every slide and any stored marks are stale. Navigation and the copyright
+    /// position both use this, so they can't disagree.
+    /// </summary>
+    public static ImmutableArray<Id<Slide>> InForce(ShowItem item, Show show) =>
+        CanSkip(show) ? item.SkippedSlideIds : [];
+
+    /// <summary>
     /// Skips or un-skips one slide in a Service Item. Un-skipping is always allowed, including slides the catalog
     /// marks Skipped. Changes apply only to this item.
     /// </summary>

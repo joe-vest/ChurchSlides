@@ -15,7 +15,6 @@ public sealed record Service
     [JsonRequired] public Id<Service> Id { get; init; }
     [JsonRequired] public string Name { get; init; } = "";
     [JsonRequired] public DateOnly Date { get; init; }
-    [JsonRequired] public ServiceMode Mode { get; init; } = ServiceMode.Rehearse;
     [JsonRequired] public ImmutableArray<ServiceItem> Items { get; init; } = [];
     [JsonRequired] public ImmutableArray<Variable> Variables { get; init; } = [];
     [JsonRequired] public ImmutableArray<CountdownTimer> Timers { get; init; } = [];
@@ -122,6 +121,7 @@ public sealed record CountdownTimer
     public TimeSpan? Duration { get; init; }
     [JsonRequired] public TimerEndBehavior EndBehavior { get; init; } = TimerEndBehavior.HoldAtZero;
     [JsonRequired] public int WarningThresholdSeconds { get; init; }
+    /// <summary>Null means no color change when the warning threshold is reached (TMR-006).</summary>
     public string? WarningColorHex { get; init; }
     [JsonRequired] public bool AutoStartOnDisplay { get; init; } = true;
 }

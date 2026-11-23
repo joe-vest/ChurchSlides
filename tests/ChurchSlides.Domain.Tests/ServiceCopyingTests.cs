@@ -31,7 +31,6 @@ public class ServiceCopyingTests
         Assert.False(service.Id.IsEmpty);
         Assert.Equal("Sunday 3 Jan", service.Name);
         Assert.Equal(Date, service.Date);
-        Assert.Equal(ServiceMode.Rehearse, service.Mode);
         Assert.Equal(template.Id, service.CreatedFromServiceTemplateId);
 
         Assert.Equal(template.Items.Length, service.Items.Length);
@@ -117,13 +116,12 @@ public class ServiceCopyingTests
     }
 
     [Fact]
-    public void SVC_003_a_duplicate_starts_in_rehearse_mode_and_keeps_variables_and_local_copies()
+    public void SVC_003_a_duplicate_has_no_mode_so_starts_in_rehearse_and_keeps_variables_and_local_copies()
     {
         var original = SampleData.Service(); // Live
         var copy = ServiceCopying.Duplicate(original, "Copy", Date);
 
-        Assert.Equal(ServiceMode.Live, original.Mode);
-        Assert.Equal(ServiceMode.Rehearse, copy.Mode);
+        Assert.DoesNotContain("\"mode\"", VersionedFile.Serialize(copy)); // no mode: Rehearse comes from the absent state file
         Assert.NotEqual(original.Id, copy.Id);
         Assert.Equal("Copy", copy.Name);
         Assert.Equal(Date, copy.Date);

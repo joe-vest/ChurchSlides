@@ -1,3 +1,4 @@
+using ChurchSlides.Domain.Editing;
 using ChurchSlides.Domain.Model;
 using ChurchSlides.Domain.Resolution;
 using static ChurchSlides.Domain.Tests.Fx;
@@ -100,6 +101,13 @@ public class CopyrightTests
 
     // ---- Decision 4: position counts displayed slides only ---------------------------------
 
+    private static ShowReferenceItem ItemSkipping(params Id<Slide>[] skipped) => new()
+    {
+        Id = I<ServiceItem>(1),
+        ShowId = I<Show>(1),
+        SkippedSlideIds = [.. skipped],
+    };
+
     [Fact]
     public void SlidePosition_ignores_skipped_slides()
     {
@@ -107,11 +115,11 @@ public class CopyrightTests
         var s2 = SlideOf(2);
         var s3 = SlideOf(3);
         var show = ShowOf([s1, s2, s3]);
-        IReadOnlyCollection<Id<Slide>> skipped = [s1.Id];
+        var item = ItemSkipping(s1.Id);
 
-        Assert.Equal(default, SlidePosition.For(show, s1, skipped)); // a skipped slide is neither first nor last
-        Assert.Equal(new SlidePosition(true, false), SlidePosition.For(show, s2, skipped));
-        Assert.Equal(new SlidePosition(false, true), SlidePosition.For(show, s3, skipped));
+        Assert.Equal(default, SlidePosition.For(show, s1, item)); // a skipped slide is neither first nor last
+        Assert.Equal(new SlidePosition(true, false), SlidePosition.For(show, s2, item));
+        Assert.Equal(new SlidePosition(false, true), SlidePosition.For(show, s3, item));
     }
 
     [Fact]
@@ -119,7 +127,7 @@ public class CopyrightTests
     {
         var s1 = SlideOf(1);
         var show = ShowOf([s1]);
-        Assert.Equal(new SlidePosition(true, true), SlidePosition.For(show, s1, []));
+        Assert.Equal(new SlidePosition(true, true), SlidePosition.For(show, s1, null));
     }
 
     [Fact]
@@ -129,9 +137,8 @@ public class CopyrightTests
         var s2 = SlideOf(2, Box(Rich(Run("two"))));
         var show = ShowOf([s1, s2], placement: CopyrightPlacement.FirstSlide, metadata: Newton, defaultTemplate: I<Template>(1));
         var set = Set([Tpl(1)]);
-        IReadOnlyCollection<Id<Slide>> skipped = [s1.Id];
 
-        var onS2 = SlideResolver.Resolve(s2, Ctx(show, set, position: SlidePosition.For(show, s2, skipped)));
+        var onS2 = SlideResolver.Resolve(s2, Ctx(show, set, position: SlidePosition.For(show, s2, ItemSkipping(s1.Id))));
 
         Assert.NotNull(CopyrightBox(onS2));
     }
@@ -140,6 +147,39 @@ public class CopyrightTests
     public void A_slide_not_in_the_show_has_no_position()
     {
         var show = ShowOf([SlideOf(1)]);
-        Assert.Equal(default, SlidePosition.For(show, SlideOf(99), []));
+        Assert.Equal(default, SlidePosition.For(show, SlideOf(99), null));
+    }
+
+    [Fact]
+    public void SVC_025_CCLI_004_a_cued_show_ignores_a_stale_skip_list_so_the_notice_lands_on_its_real_first_slide()
+    {
+        var s1 = SlideOf(1, Box(Rich(Run("one"))));
+        var s2 = SlideOf(2, Box(Rich(Run("two"))));
+        var show = ShowOf([s1, s2], placement: CopyrightPlacement.FirstSlide, metadata: Newton, defaultTemplate: I<Template>(1)) with
+        {
+            Audio = new AudioTrack
+            {
+                MediaPath = LibraryRelativePath.Create("a.mp3"),
+                Cues = [new Cue(s2.Id, TimeSpan.FromSeconds(5))],
+            },
+        };
+        var staleItem = ItemSkipping(s1.Id); // saved before the Show got its Cue
+
+        Assert.Empty(SkipRules.InForce(staleItem, show));
+        Assert.Equal(new SlidePosition(true, false), SlidePosition.For(show, s1, staleItem));
+        Assert.Equal(new SlidePosition(false, true), SlidePosition.For(show, s2, staleItem));
+
+        var onS1 = SlideResolver.Resolve(s1, Ctx(show, Set([Tpl(1)]), position: SlidePosition.For(show, s1, staleItem)));
+        Assert.NotNull(CopyrightBox(onS1));
+    }
+
+    [Fact]
+    public void SVC_025_an_uncued_show_still_honors_the_skip_list_and_outside_a_service_nothing_is_skipped()
+    {
+        var show = ShowOf([SlideOf(1), SlideOf(2)]);
+        var item = ItemSkipping(I<Slide>(1));
+
+        Assert.Equal([I<Slide>(1)], SkipRules.InForce(item, show).ToArray());
+        Assert.Equal(new SlidePosition(true, false), SlidePosition.For(show, SlideOf(1), null));
     }
 }

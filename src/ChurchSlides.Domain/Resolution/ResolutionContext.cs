@@ -1,3 +1,4 @@
+using ChurchSlides.Domain.Editing;
 using ChurchSlides.Domain.Model;
 
 namespace ChurchSlides.Domain.Resolution;
@@ -27,8 +28,13 @@ public sealed class TemplateSet
 /// <summary>Where a slide sits among the slides actually shown for its Show (skipped slides don't count).</summary>
 public readonly record struct SlidePosition(bool IsFirst, bool IsLast)
 {
-    public static SlidePosition For(Show show, Slide slide, IReadOnlyCollection<Id<Slide>> skipped)
+    /// <summary>
+    /// <paramref name="item"/> is the Service Item the Show is played from, or null for a Show viewed outside a Service
+    /// (nothing is skipped then). Its skip list is applied through <see cref="SkipRules.InForce"/> (SVC-025, CCLI-004).
+    /// </summary>
+    public static SlidePosition For(Show show, Slide slide, ServiceItem? item)
     {
+        var skipped = item is ShowItem showItem ? SkipRules.InForce(showItem, show) : [];
         var shown = show.Slides.Where(s => !skipped.Contains(s.Id)).ToList();
         var index = shown.FindIndex(s => s.Id == slide.Id);
         return index < 0 ? default : new SlidePosition(index == 0, index == shown.Count - 1);

@@ -34,7 +34,6 @@ public sealed record LibrarySettings
     [JsonRequired] public int CrossfadeMilliseconds { get; init; } = 300;
     [JsonRequired] public string CopyrightFormat { get; init; } = DefaultCopyrightFormat;
     public Id<Template>? DefaultTemplateId { get; init; }
-    public Id<Template>? DefaultScriptureTemplateId { get; init; }
     public DateOnly? CcliReportingPeriodStart { get; init; }
     public DateOnly? CcliReportingPeriodEnd { get; init; }
 }

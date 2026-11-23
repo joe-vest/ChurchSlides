@@ -53,6 +53,7 @@ public static class SlideResolver
         }
 
         if (box is null) problems.Add(new NoUsableTemplateBox());
+        if (context.Service is not null) ReportTimerTokensNotAlone(textBox, problems);
 
         var defaults = box?.Defaults ?? new TextDefaults();
         return NewBox(
@@ -60,6 +61,19 @@ public static class SlideResolver
             defaults,
             textBox,
             ResolveParagraphs(textBox.Content.Paragraphs, defaults, context, problems));
+    }
+
+    /// <summary>TMR-009: a Timer token must be the only content of its Text Box (ignoring whitespace and empty paragraphs).</summary>
+    private static void ReportTimerTokensNotAlone(SlideTextBox textBox, List<RenderProblem> problems)
+    {
+        var content = textBox.Content.Paragraphs
+            .SelectMany(p => p.Inlines)
+            .Where(i => i is not TextRun { Text: var text } || !string.IsNullOrWhiteSpace(text))
+            .ToList();
+        if (content is [TokenRun { Token: TimerToken }]) return;
+
+        foreach (var name in content.Select(i => (i as TokenRun)?.Token).OfType<TimerToken>().Select(t => t.Name))
+            problems.Add(new TimerTokenNotAlone(name, textBox.Id));
     }
 
     /// <summary>Builds a render box. A null source means the generated copyright box.</summary>

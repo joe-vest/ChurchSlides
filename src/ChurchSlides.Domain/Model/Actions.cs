@@ -53,6 +53,7 @@ public sealed record SlideTarget(Id<Slide> SlideId, Id<ServiceItem>? ItemId = nu
 [JsonDerivedType(typeof(Clear), "clear")]
 [JsonDerivedType(typeof(Black), "black")]
 [JsonDerivedType(typeof(Logo), "logo")]
+[JsonDerivedType(typeof(Normal), "normal")]
 [JsonDerivedType(typeof(StartTimer), "startTimer")]
 [JsonDerivedType(typeof(StopTimer), "stopTimer")]
 public abstract record Command;
@@ -63,9 +64,17 @@ public sealed record NextItem : Command;
 public sealed record PreviousItem : Command;
 public sealed record StartAudio : Command;
 public sealed record StopAudio : Command;
+/// <summary>Hides all text. Sets the screen state, it doesn't toggle it (ACT-030).</summary>
 public sealed record Clear : Command;
+
+/// <summary>Shows black. Sets the screen state, it doesn't toggle it (ACT-031).</summary>
 public sealed record Black : Command;
+
+/// <summary>Shows the logo. Sets the screen state, it doesn't toggle it (ACT-032).</summary>
 public sealed record Logo : Command;
+
+/// <summary>Returns the screen to showing the current slide normally (ACT-033).</summary>
+public sealed record Normal : Command;
 
 public sealed record GoToSlide : Command
 {

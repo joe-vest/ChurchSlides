@@ -27,6 +27,7 @@ public class SerializationTests
     [Fact] public void Template_round_trips() => AssertRoundTrips(SampleData.Template());
     [Fact] public void ServiceTemplate_round_trips() => AssertRoundTrips(SampleData.ServiceTemplate());
     [Fact] public void CategoryList_round_trips() => AssertRoundTrips(SampleData.Categories());
+    [Fact] public void ServiceState_round_trips() => AssertRoundTrips(SampleData.ServiceState());
     [Fact] public void LibrarySettings_round_trips() => AssertRoundTrips(SampleData.Settings());
 
     [Fact]
@@ -90,7 +91,7 @@ public class SerializationTests
         var service = VersionedFile.Deserialize<Service>(VersionedFile.Serialize(SampleData.Service())).Value!;
 
         Assert.IsType<ServiceStarted>(service.Actions[0].Trigger);
-        Assert.Equal(14, service.Actions[0].Commands.Length);
+        Assert.Equal(15, service.Actions[0].Commands.Length);
 
         var itemTarget = Assert.IsType<GoToSlide>(service.Actions[0].Commands[4]).Target;
         Assert.Equal(SampleData.I<ServiceItem>(100), itemTarget.ItemId);
@@ -325,5 +326,6 @@ public class SerializationTests
         { "sunday-morning.service-template.json", () => VersionedFile.Serialize(SampleData.ServiceTemplate()), s => VersionedFile.Deserialize<ServiceTemplate>(s).Status },
         { "categories.json", () => VersionedFile.Serialize(SampleData.Categories()), s => VersionedFile.Deserialize<CategoryList>(s).Status },
         { "library.json", () => VersionedFile.Serialize(SampleData.Settings()), s => VersionedFile.Deserialize<LibrarySettings>(s).Status },
+        { "service-state.json", () => VersionedFile.Serialize(SampleData.ServiceState()), s => VersionedFile.Deserialize<ServiceState>(s).Status },
     };
 }

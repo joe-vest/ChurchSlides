@@ -29,5 +29,8 @@ public sealed record VariableEmpty(string Name) : RenderProblem;
 /// <summary>A Variable token names a Variable the Service doesn't define (VAR-005).</summary>
 public sealed record VariableUndefined(string Name) : RenderProblem;
 
+/// <summary>A Timer token shares its Text Box with other content, so it can't stand alone (TMR-009).</summary>
+public sealed record TimerTokenNotAlone(string TimerName, Id<SlideTextBox> TextBoxId) : RenderProblem;
+
 /// <summary>A Timer token names a Timer the Service doesn't define.</summary>
 public sealed record TimerUndefined(string Name) : RenderProblem;

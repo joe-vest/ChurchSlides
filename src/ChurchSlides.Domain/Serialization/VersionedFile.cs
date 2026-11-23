@@ -32,6 +32,7 @@ public static class SchemaVersions
     public const int ServiceTemplate = 1;
     public const int CategoryList = 1;
     public const int LibrarySettings = 1;
+    public const int ServiceState = 1;
 
     public static int Current<T>()
     {
@@ -42,6 +43,7 @@ public static class SchemaVersions
         if (type == typeof(ServiceTemplate)) return ServiceTemplate;
         if (type == typeof(CategoryList)) return CategoryList;
         if (type == typeof(LibrarySettings)) return LibrarySettings;
+        if (type == typeof(ServiceState)) return ServiceState;
         throw new ArgumentException($"{type.Name} is not a Library file type.");
     }
 }

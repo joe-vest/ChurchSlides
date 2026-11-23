@@ -213,6 +213,7 @@ internal static class SampleData
             new Clear(),
             new Black(),
             new Logo(),
+            new Normal(),
             new StartTimer { TimerName = "ServiceStart" },
             new StopTimer { TimerName = "Offering" },
         ],
@@ -223,7 +224,6 @@ internal static class SampleData
         Id = I<Service>(7),
         Name = "Sunday Morning",
         Date = new DateOnly(2026, 12, 6),
-        Mode = ServiceMode.Live,
         CreatedFromServiceTemplateId = I<ServiceTemplate>(8),
         Items =
         [
@@ -314,12 +314,21 @@ internal static class SampleData
         Actions = [new TriggeredAction { Trigger = new TimerExpired { TimerName = "ServiceStart" }, Commands = [new GoToItem { ItemId = I<ServiceItem>(201) }] }],
     };
 
+    public static ServiceState ServiceState() => new()
+    {
+        ServiceId = I<Service>(7),
+        Mode = ServiceMode.Live,
+        Dismissals = [new CheckDismissal { Rule = "VariableEmpty", Target = "sermon_title" }, new CheckDismissal { Rule = "NoCcliLicense" }],
+        LogPromptDeclined = true,
+    };
+
     public static CategoryList Categories() => new()
     {
         Categories =
         [
             new Category { Id = I<Category>(2), Name = "Hymns", DefaultTemplateId = I<Template>(3) },
             new Category { Id = I<Category>(6), Name = "Announcements" },
+            BuiltInCategories.Scripture,
         ],
     };
 
@@ -331,7 +340,6 @@ internal static class SampleData
         Transition = TransitionKind.Crossfade,
         CrossfadeMilliseconds = 400,
         DefaultTemplateId = I<Template>(3),
-        DefaultScriptureTemplateId = I<Template>(4),
         CcliReportingPeriodStart = new DateOnly(2026, 1, 1),
         CcliReportingPeriodEnd = new DateOnly(2026, 12, 31),
     };

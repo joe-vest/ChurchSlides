@@ -25,4 +25,5 @@ namespace ChurchSlides.Domain.Serialization;
 [JsonSerializable(typeof(Envelope<ServiceTemplate>))]
 [JsonSerializable(typeof(Envelope<CategoryList>))]
 [JsonSerializable(typeof(Envelope<LibrarySettings>))]
+[JsonSerializable(typeof(Envelope<ServiceState>))]
 internal sealed partial class ChurchSlidesJsonContext : JsonSerializerContext;

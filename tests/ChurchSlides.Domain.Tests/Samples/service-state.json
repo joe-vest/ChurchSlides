@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "serviceId": "00000000-0000-0000-0000-000000000007",
+    "mode": "Live",
+    "dismissals": [
+      {
+        "rule": "VariableEmpty",
+        "target": "sermon_title"
+      },
+      {
+        "rule": "NoCcliLicense"
+      }
+    ],
+    "logPromptDeclined": true
+  }
+}

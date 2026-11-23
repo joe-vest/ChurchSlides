@@ -8,7 +8,6 @@
     "crossfadeMilliseconds": 400,
     "copyrightFormat": "{{show.title}} — {{show.authors}} · © {{show.copyright}} · Used by permission · CCLI License #{{church.ccliLicense}}",
     "defaultTemplateId": "00000000-0000-0000-0000-000000000003",
-    "defaultScriptureTemplateId": "00000000-0000-0000-0000-000000000004",
     "ccliReportingPeriodStart": "2026-01-01",
     "ccliReportingPeriodEnd": "2026-12-31"
   }
