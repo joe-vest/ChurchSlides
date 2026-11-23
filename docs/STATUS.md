@@ -59,7 +59,8 @@ Last updated: 2026-11-23
 
 ## Follow-ups (found, out of scope of the chunk that found them)
 
-- C1.3c: code changes from the document review: `Service.Mode` moves to the Service state file; remove `LibrarySettings.DefaultScriptureTemplateId`; add the built-in Scripture Category; add the `Normal` command; trigger validity per level (SlideDisplayed/SlideEnded now valid on a Service Item); Timer name rule.
+- C1.3c: code changes from the document and plan reviews: `Service.Mode` moves to the Service state file in `service-state/`; remove `LibrarySettings.DefaultScriptureTemplateId`; add the built-in Scripture Category; add the `Normal` command; trigger validity per level (SlideDisplayed/SlideEnded now valid on a Service Item); Timer name rule; effective skip list shared by `SlidePosition` and navigation (cued Shows ignore stale skips); `TimerTokenNotAlone` problem; null `WarningColorHex` means no color change. See DEVELOPMENT-PLAN C1.3c.
+- C1.4: duplicate-ID detection (LIB-009) compares top-level file IDs only. Duplicated Services legitimately share the IDs of their Show Copies and Scripture slides.
 - C4.2 (cue editor): adding the first Cue to a Show with Skipped marks. FRD 0.3 says the marks and any Service skip lists are then ignored (SVC-025). The cue editor should say so.
 - C1.5: navigation must honor `ShowItem.SkippedSlideIds` for both reference and copy items (except for cued Shows), and allow a direct jump to a skipped slide (LIVE-017).
 - C2.5: the editor must call `EditPolicy.ForSlideEdit`, `ShowCopying.Fork`/`Revert`, `ShowItems.AddReference`/`FillPlaceholder` and `SkipRules` rather than reimplement them.

@@ -155,15 +155,15 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 - **Do:** `ILibrary` and repositories for Shows, Services, Templates, Service Templates, Categories, Library settings; atomic `.saving` writer with retry; content-hash and last-write tracking; schema migration framework; local-data paths in `%LOCALAPPDATA%`; draft store.
 - **Tests:** against a temp folder: atomic save survives a simulated crash mid-write, `.saving` files ignored, overwrite conflict detected, migration chain.
 
-#### C1.3c: Model and storage changes from the document review. Size S
-- **FRD:** LIB-013, CAT-010, SCR-013, ACT-013/014 (Service Item), ACT-026..028, ACT-033, MODE-001, TMR-001.
-- **Do:** Service state file (`services/{id}.state.json`: Mode, check dismissals, CCLI-016 answer) with read, write, and missing-file defaults; move `Mode` out of the Service file; built-in Scripture Category with a fixed ID, added to `categories.json` on load if missing, delete refused; remove `LibrarySettings.DefaultScriptureTemplateId`; `Normal` command; trigger validity rules (which triggers are valid on which level); Timer name rule shared with Variables.
+#### C1.3c: Model and storage changes from the document review. Size M (split at plan time into storage and domain parts if it exceeds the sizing rule)
+- **FRD:** LIB-013, CAT-010, SCR-013, ACT-013/014 (Service Item), ACT-026..028, ACT-033, MODE-001, TMR-001, TMR-006, TMR-009, SVC-025, CCLI-004.
+- **Do:** Service state file (`service-state/{id}.json`: Mode, check dismissals, CCLI-016 answer) with read, write, and missing-file defaults, and `service-state/` added to `LibraryLayout` and to the C1.3 "Library holds only the layout" test; move `Mode` out of the Service file; built-in Scripture Category with a fixed ID, added to `categories.json` on load if missing, delete refused; remove `LibrarySettings.DefaultScriptureTemplateId`; `Normal` command; trigger validity rules (which triggers are valid on which level); Timer name rule shared with Variables. **Effective skip list:** one function (for example `SkipRules.InForce(item, show)`) that returns an empty list for cued Shows, used by `SlidePosition` now and by navigation in C1.5. New resolution problem **`TimerTokenNotAlone`** (TMR-009). Document that a null `WarningColorHex` means no color change (TMR-006).
 - **Schema:** amend version 1 in place (owner decision, 2026-11-23: no real Library exists yet). No migration step.
-- **Tests:** state file round trip and defaults; Scripture Category always present and not deletable; Service files no longer contain `Mode`.
+- **Tests:** state file round trip and defaults; state files never appear in `Services.LoadAll`; Scripture Category always present and not deletable; Service files no longer contain `Mode`; a cued Show with a stale skip list puts the copyright on its real first/last slide; a Timer token beside other text reports `TimerTokenNotAlone`.
 
 #### C1.4: Library watching and search. Size M
 - **FRD:** LIB-006/007/009/010/011, CAT-003..006.
-- **Do:** debounced `FileSystemWatcher` pipeline; self-write suppression; conflict-copy and duplicate-ID detection; in-memory search index with incremental updates; Library-unavailable handling.
+- **Do:** debounced `FileSystemWatcher` pipeline; self-write suppression; conflict-copy and duplicate-ID detection (top-level file IDs only: Show Copies and Scripture slides inside Services legitimately share IDs after a Service is duplicated); in-memory search index with incremental updates; Library-unavailable handling.
 - **Tests:** simulated bursts of file events, Drive-style temp files, duplicate IDs; search ranking, accent insensitivity, filter by Kind/Category. Includes AS-08 (edit conflict) at the storage level.
 
 #### C1.5: Navigation engine. Size M. **Review gate**
@@ -189,7 +189,7 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 
 #### C2.3: Rich-text slide editor. Size L. **Review gate**
 - **FRD:** SLD-020..028, TPL-020..026 (binding UI), SAFE-001..003.
-- **Do:** WYSIWYG slide editor canvas; `RichTextBox` overlay with converters; formatting toolbar (font, size, color, bold, italic, alignment); token chips; overflow indicator; detach/reattach/clear formatting; draft handling; app-level snapshot undo/redo with `RichTextBox` undo disabled (D-2).
+- **Do:** WYSIWYG slide editor canvas; `RichTextBox` overlay with converters; formatting toolbar (font, size, color, bold, italic, alignment); token chips (a Timer token is only inserted on its own, TMR-009); overflow indicator; detach/reattach/clear formatting; draft handling; app-level snapshot undo/redo with `RichTextBox` undo disabled (D-2).
 - **Tests:** converter round trips and view-model behavior headless. Golden images for editor/renderer agreement.
 - Highest UI risk. Plan this using the spike's findings, and split off the converters as their own sub-chunk if needed.
 
@@ -246,7 +246,7 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 
 #### C5.1: Timers. Size M
 - **FRD:** TMR-001..017.
-- **Do:** `TimerService` on `IClock` with whole-second alignment; states and expiry-once logic; clock-time and duration types; live text slots in the renderer with fixed-cell digits; warning color; auto-start on display; Timer definitions UI on Service and Service Template.
+- **Do:** `TimerService` on `IClock` with whole-second alignment; states and expiry-once logic; clock-time and duration types; live text slots in the renderer with fixed-cell digits; warning color (none set means no change, new Timers default to red); auto-start on display; Timer definitions UI on Service and Service Template.
 - **Tests:** deterministic fake-clock tests for every TMR rule, including late start. Visual check for flicker at G5.
 
 #### C5.2: Action processor. Size L (split: engine, then UI)

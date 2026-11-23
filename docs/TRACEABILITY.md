@@ -129,7 +129,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | TMR-006 | MUST | C5.1 | todo |
 | TMR-007 | MUST | C5.1 | todo |
 | TMR-008 | MUST | C5.1 | todo |
-| TMR-009 | MUST | C5.1 | todo |
+| TMR-009 | MUST | C1.3c (problem report), C2.3 (editor), C5.1 | todo |
 | TMR-010 | MUST | C5.1 | todo |
 | TMR-011 | MUST | C5.1 | todo |
 | TMR-012 | MUST | C5.1 | todo |

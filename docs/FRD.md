@@ -245,7 +245,7 @@ record Action(Trigger Trigger, TimeSpan Delay, List<Command> Commands);
 | LIB-010 | MUST | If the Library folder is unavailable at startup, show a clear message and let the user choose another folder. Don't crash. |
 | LIB-011 | SHOULD | A media file that is referenced but missing renders as a neutral fallback (for example a solid dark background) and is flagged by the pre-service check. It must never crash or block the Output. |
 | LIB-012 | COULD | A "clean up unused media" tool lists media files no object references. |
-| LIB-013 | MUST | Facts about a Service that change outside its editor are saved in a separate **Service state file** (`services/{id}.state.json`), not in the Service file: the Mode (MODE-001), pre-service check dismissals (CHK-002), and the "don't ask again" answer of CCLI-016. Writing them never conflicts with an open Service draft (SAFE-001). The state file is small and the last write wins (no LIB-006 prompt). A missing state file means Rehearse mode, no dismissals, and not yet asked. |
+| LIB-013 | MUST | Facts about a Service that change outside its editor are saved in a separate **Service state file** (`service-state/{id}.json`, its own folder so it is never mistaken for a Service), not in the Service file: the Mode (MODE-001), pre-service check dismissals (CHK-002), and the "don't ask again" answer of CCLI-016. Writing them never conflicts with an open Service draft (SAFE-001). The state file is small and the last write wins (no LIB-006 prompt). A missing state file means Rehearse mode, no dismissals, and not yet asked. |
 
 Suggested folder layout (non-normative):
 
@@ -255,7 +255,7 @@ Library/
   categories.json
   shows/{id}.json
   services/{id}.json
-  services/{id}.state.json (mode, check dismissals, CCLI-016 answer; LIB-013)
+  service-state/{id}.json  (mode, check dismissals, CCLI-016 answer; LIB-013)
   templates/{id}.json
   service-templates/{id}.json
   bibles/{id}.xml          (original Zefania files)
@@ -443,10 +443,10 @@ Library/
 | TMR-003 | MUST | Timer states: Stopped, Running, Expired. |
 | TMR-004 | MUST | Once started, a Timer keeps running regardless of which slide is displayed or whether it's visible. Several slides showing the same Timer show the same value. |
 | TMR-005 | MUST | End behavior per Timer: **Hold at zero**, or **Continue negative** (displayed with a leading minus, for example `-0:01:23`). |
-| TMR-006 | MUST | Warning: one threshold in seconds and one warning color per Timer. When remaining time is at or below the threshold, the Timer's text shows in the warning color. Above the threshold it uses the text's own formatting. Only one threshold is supported. |
+| TMR-006 | MUST | Warning: one threshold in seconds and one warning color per Timer. When remaining time is at or below the threshold, the Timer's text shows in the warning color. Above the threshold it uses the text's own formatting. Only one threshold is supported. A Timer with no warning color doesn't change color. New Timers created in the UI default to red. |
 | TMR-007 | MUST | When a Running Timer reaches zero, it changes to Expired and fires its `TimerExpired` trigger **exactly once** per start, whatever the end behavior. |
 | TMR-008 | MUST | If a Countdown-to-clock-time Timer is started after its target time has already passed today, it goes straight to Expired, shows zero (or negative, under Continue negative), and **doesn't** fire its trigger. |
-| TMR-009 | MUST | A slide shows a Timer with a token such as `{{timer:ServiceStart}}` inside a Text Box. The default display format is `h:mm:ss`. The token stands alone in its Text Box. It isn't embedded in running text. |
+| TMR-009 | MUST | A slide shows a Timer with a token such as `{{timer:ServiceStart}}` inside a Text Box. The default display format is `h:mm:ss`. The token stands alone in its Text Box. It isn't embedded in running text. The editor only inserts Timer tokens on their own. A Timer token found next to other text (for example from a paste or an import) is reported as a problem and flagged by the pre-service check. |
 | TMR-010 | MUST | Timer display is smooth: digits use fixed-width (tabular) figures, or the timer run is laid out at a fixed width, so the text around it doesn't shift. Only the timer's text is updated each tick. The slide isn't re-rendered, and transitions don't apply to timer ticks. |
 | TMR-011 | MUST | Timers tick on whole seconds, tied to the system clock (not an accumulating interval timer), so they don't drift. |
 | TMR-012 | MUST | Commands: Start Timer (name) and Stop Timer (name). Stop returns the Timer to Stopped and resets it. Starting a Running Timer does nothing. Starting an Expired Timer restarts it, the same as Stop followed by Start (TMR-008 still applies to clock-time Timers). |
@@ -672,7 +672,7 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 
 | ID | Priority | Requirement |
 |---|---|---|
-| CHK-001 | MUST | A "Check Service" function lists warnings for the open Service: unfilled Placeholders; missing Shows; Variables referenced but empty or undefined; missing image or audio files; reportable Songs missing a copyright notice or authors; Songs with no CCLI number that aren't marked public domain; text overflow (SLD-028); Template box mismatches (TPL-027); Actions referring to missing slides, items, or Timers (ACT-041); Audio Tracks with Cues pointing to deleted slides; Timer tokens naming an undefined Timer; Scripture Items whose Bible is missing or whose reference is empty; Actions with no delay that change slides in a cycle (which would trip the loop guard, ACT-040); Library problems (LIB-009); the chosen output display not being connected (LIVE-002). |
+| CHK-001 | MUST | A "Check Service" function lists warnings for the open Service: unfilled Placeholders; missing Shows; Variables referenced but empty or undefined; missing image or audio files; reportable Songs missing a copyright notice or authors; Songs with no CCLI number that aren't marked public domain; text overflow (SLD-028); Template box mismatches (TPL-027); Actions referring to missing slides, items, or Timers (ACT-041); Audio Tracks with Cues pointing to deleted slides; Timer tokens naming an undefined Timer, or not standing alone in their Text Box (TMR-009); Scripture Items whose Bible is missing or whose reference is empty; Actions with no delay that change slides in a cycle (which would trip the loop guard, ACT-040); Library problems (LIB-009); the chosen output display not being connected (LIVE-002). |
 | CHK-002 | MUST | The check is advisory only (DEC-012). It never blocks anything. Each warning can be dismissed for this Service. |
 | CHK-003 | SHOULD | Clicking a warning opens the item or slide involved. |
 | CHK-004 | SHOULD | The check runs automatically when the user starts presenting, and shows a dismissible summary if there are warnings. |
@@ -829,3 +829,4 @@ End-to-end scenarios the finished app must pass. Use them as integration tests.
   - Services: SVC-005 and SVC-030 define Save as Service Template and Scripture Item stubs.
   - CCLI: CCLI-010 Cancel doesn't stop the close, CCLI-018 crash safety net. Q-008 resolved by CCLI-002.
   - CHK-001: more checks. "Placeholder" now means only the Service Item kind (VAR-003, LIB-011 reworded). New open questions Q-011 and Q-012.
+- Plan review (2026-11-23): the Service state file moves to its own folder `service-state/` (LIB-013). TMR-009: Timer tokens not standing alone are reported. TMR-006: no warning color means no change, new Timers default to red.
