@@ -8,7 +8,7 @@ Last updated: 2026-11-23 (C1.5 done)
 | Chunk | Title | Status |
 |---|---|---|
 | C0.1 | Repository and documentation setup | done |
-| C0.2 | Spike A: output and crossfade (one combined spike program) | planned, next: C0.2a shell (see docs/plans/C0.2.md) |
+| C0.2 | Spike A: output and crossfade (one combined spike program) | C0.2a shell done (`spike/`, System S8, Output S1, Startup S7 tabs); next: C0.2b slides (see docs/plans/C0.2.md) |
 | C0.3 | Spike B: rich text | todo |
 | C0.4 | Spike C: audio and timer | todo |
 | G0 | Owner runs the spike program on the church machine | blocked on C0.2-C0.4 |
@@ -73,6 +73,7 @@ Last updated: 2026-11-23 (C1.5 done)
 - C1.4a: the app (C2.2) must call `Monitor.Scan()` at startup, then start `FolderWatcher` and post `Updated` to the UI thread. `SystemClock` is the one allowed `DateTimeOffset.Now` in Domain.
 - Optional: add an `AssemblyInfo`/version stamp when packaging (C9.3).
 - Markdown lint warnings in docs (cosmetic).
+- Spike (before G0): the self-contained publish ships the runtime pack the installed SDK knows (.NET 10.0.3 with SDK 10.0.103), older than the dev PC's runtime (10.0.15). Update the SDK before publishing for G0. The spike's "GPU driver" line reads the first display-adapter registry key only; fine on the church PC's single GPU.
 
 ## Known issues
 

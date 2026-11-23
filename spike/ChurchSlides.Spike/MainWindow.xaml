@@ -1,0 +1,94 @@
+<Window x:Class="ChurchSlides.Spike.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ChurchSlides spike" Width="1000" Height="680">
+  <DockPanel>
+    <!-- Top bar: automatic run, save, media folder -->
+    <Border DockPanel.Dock="Top" Padding="8" BorderBrush="#DDD" BorderThickness="0,0,0,1">
+      <DockPanel>
+        <Button x:Name="RunAutoButton" Content="Run automatic tests" Padding="10,4" Click="RunAuto_Click" />
+        <Button Content="Save results" Padding="10,4" Margin="8,0,0,0" Click="Save_Click" />
+        <Button Content="Choose media folder…" Padding="10,4" Margin="8,0,0,0" Click="ChooseMedia_Click" DockPanel.Dock="Right" />
+        <TextBlock x:Name="MediaFolderText" Margin="16,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" DockPanel.Dock="Right" MaxWidth="360" />
+        <TextBlock x:Name="AutoStatusText" Margin="16,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </Border>
+
+    <!-- Live readouts -->
+    <StatusBar DockPanel.Dock="Bottom">
+      <StatusBarItem>
+        <TextBlock x:Name="MetricsText" FontFamily="Consolas" />
+      </StatusBarItem>
+      <StatusBarItem HorizontalAlignment="Right">
+        <CheckBox x:Name="CountFramesBox" Content="Count frames (costs CPU)" Checked="CountFrames_Changed" Unchecked="CountFrames_Changed" />
+      </StatusBarItem>
+    </StatusBar>
+
+    <TabControl x:Name="Tabs" Margin="4">
+      <TabItem Header="System (S8)">
+        <DockPanel Margin="8">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Content="Refresh" Padding="10,4" Click="RefreshSystem_Click" />
+            <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Text="Pass: it runs, and the render tier is 2 (hardware)." />
+          </StackPanel>
+          <DataGrid x:Name="SystemGrid" IsReadOnly="True" AutoGenerateColumns="False" HeadersVisibility="Column">
+            <DataGrid.Columns>
+              <DataGridTextColumn Header="Figure" Binding="{Binding Name}" Width="220" />
+              <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="*" />
+            </DataGrid.Columns>
+          </DataGrid>
+        </DockPanel>
+      </TabItem>
+
+      <TabItem Header="Output (S1)">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="OutputPanel" Margin="8">
+            <StackPanel Orientation="Horizontal">
+              <TextBlock Text="Monitor:" VerticalAlignment="Center" />
+              <ComboBox x:Name="MonitorBox" Width="360" Margin="8,0,0,0" />
+              <Button Content="Refresh" Padding="10,4" Margin="8,0,0,0" Click="RefreshMonitors_Click" />
+              <Button Content="Open test pattern" Padding="10,4" Margin="8,0,0,0" Click="OpenPattern_Click" />
+              <Button Content="Close it" Padding="10,4" Margin="8,0,0,0" Click="ClosePattern_Click" />
+            </StackPanel>
+            <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                       Text="Opens a borderless window at the monitor's exact pixel bounds. The window rectangle is checked automatically. Look at the monitor and the projector for the eye checks." />
+            <TextBlock x:Name="OutputResultText" Margin="0,8,0,0" FontFamily="Consolas" TextWrapping="Wrap" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Startup (S7)">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel x:Name="StartupPanel" Margin="8">
+            <TextBlock TextWrapping="Wrap"
+                       Text="Every launch is timed from process start to the first frame and kept. For the figures: restart Windows, then start each build once (cold), then once more (warm). Start a copy with --kestrel (the shortcut in the README) to include the web server." />
+            <TextBlock x:Name="ThisRunText" Margin="0,8,0,0" FontFamily="Consolas" TextWrapping="Wrap" />
+            <DataGrid x:Name="StartupGrid" Margin="0,8,0,0" IsReadOnly="True" AutoGenerateColumns="False" HeadersVisibility="Column" MaxHeight="260">
+              <DataGrid.Columns>
+                <DataGridTextColumn Header="When" Binding="{Binding At, StringFormat=yyyy-MM-dd HH:mm}" />
+                <DataGridTextColumn Header="Build" Binding="{Binding Build}" />
+                <DataGridCheckBoxColumn Header="Kestrel" Binding="{Binding Kestrel}" />
+                <DataGridTextColumn Header="Uptime (min)" Binding="{Binding UptimeMinutes, StringFormat=F0}" />
+                <DataGridTextColumn Header="To Main (ms)" Binding="{Binding ToMainMs, StringFormat=F0}" />
+                <DataGridTextColumn Header="Kestrel (ms)" Binding="{Binding KestrelMs, StringFormat=F0}" />
+                <DataGridTextColumn Header="To first frame (ms)" Binding="{Binding ToFirstFrameMs, StringFormat=F0}" />
+                <DataGridTextColumn Header="JIT methods" Binding="{Binding JitMethods}" />
+                <DataGridTextColumn Header="JIT time (ms)" Binding="{Binding JitMs, StringFormat=F0}" />
+              </DataGrid.Columns>
+            </DataGrid>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Results">
+        <DockPanel Margin="8">
+          <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button Content="Refresh preview" Padding="10,4" Click="RefreshPreview_Click" />
+            <Button Content="Open results folder" Padding="10,4" Margin="8,0,0,0" Click="OpenFolder_Click" />
+          </StackPanel>
+          <TextBox x:Name="PreviewBox" IsReadOnly="True" FontFamily="Consolas" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+        </DockPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

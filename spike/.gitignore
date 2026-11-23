@@ -1,0 +1,4 @@
+# Published builds and the files the spike writes next to itself.
+out/
+spike-state.json
+spike-results-*.md
