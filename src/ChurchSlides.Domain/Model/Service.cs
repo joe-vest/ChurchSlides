@@ -43,20 +43,34 @@ public abstract record ServiceItem
     [JsonRequired] public ImmutableArray<TriggeredAction> Actions { get; init; } = [];
 }
 
-/// <summary>Points at a catalog Show, optionally skipping some of its slides (SVC-020, SVC-021).</summary>
-public sealed record ShowReferenceItem : ServiceItem
+/// <summary>
+/// A Service Item that plays a Show: either a reference to a catalog Show or a Service-local copy.
+/// The skip list is the single source of truth for which slides Next/Previous pass over (SVC-021, SVC-027).
+/// </summary>
+public abstract record ShowItem : ServiceItem
 {
-    [JsonRequired] public Id<Show> ShowId { get; init; }
     [JsonRequired] public ImmutableArray<Id<Slide>> SkippedSlideIds { get; init; } = [];
 
     /// <summary>Set when this item was a Placeholder that got filled, so it can be cleared back (SVC-033).</summary>
     public PlaceholderSpec? FilledFrom { get; init; }
+
+    public abstract ShowItem WithSkippedSlides(ImmutableArray<Id<Slide>> skipped);
+}
+
+/// <summary>Points at a catalog Show, optionally skipping some of its slides (SVC-020, SVC-021).</summary>
+public sealed record ShowReferenceItem : ShowItem
+{
+    [JsonRequired] public Id<Show> ShowId { get; init; }
+
+    public override ShowItem WithSkippedSlides(ImmutableArray<Id<Slide>> skipped) => this with { SkippedSlideIds = skipped };
 }
 
 /// <summary>A Service-local copy of a Show, created by editing a reference (SVC-022). Slide IDs are preserved from the origin.</summary>
-public sealed record ShowCopyItem : ServiceItem
+public sealed record ShowCopyItem : ShowItem
 {
     [JsonRequired] public Show LocalShow { get; init; } = null!;
+
+    public override ShowItem WithSkippedSlides(ImmutableArray<Id<Slide>> skipped) => this with { SkippedSlideIds = skipped };
 
     /// <summary>The catalog Show this was forked from, for "Revert to catalog version" (SVC-024).</summary>
     public Id<Show>? OriginShowId { get; init; }

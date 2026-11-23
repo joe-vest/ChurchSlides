@@ -13,7 +13,7 @@ Last updated: 2026-11-23
 | C0.4 | Spike C: audio and timer | todo |
 | G0 | Owner runs spikes on church machine | blocked on C0.2-C0.4 |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
-| C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | C1.2a done (slide resolution, 226 tests, see docs/plans/C1.2.md). C1.2b (copy rules) next |
+| C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | todo |
 | C1.4 | Library watching and search | todo |
 | C1.5 | Navigation engine (review gate) | todo |
@@ -43,6 +43,10 @@ Last updated: 2026-11-23
 | Q-007, Q-008, Q-009 | Defaults in FRD are fine until their chunks |
 
 ## Follow-ups (found, out of scope of the chunk that found them)
+
+- C4.2 (cue editor): adding the first Cue to a Show conflicts with Skipped marks (SVC-025, SHOW-008). Decide whether to clear the marks or refuse the cue, and say so in the UI.
+- C1.5: navigation must honor `ShowItem.SkippedSlideIds` for both reference and copy items, and allow a direct jump to a skipped slide (LIVE-017).
+- C2.5: the editor must call `EditPolicy.ForSlideEdit`, `ShowCopying.Fork`/`Revert`, `ShowItems.AddReference`/`FillPlaceholder` and `SkipRules` rather than reimplement them.
 
 - C1.3: reject empty IDs (`Id<T>.IsEmpty`) and empty required names on save, because the model no longer uses `required`.
 - C1.3: migrations operate on the JSON before deserializing, and must add any newly required fields to old files.

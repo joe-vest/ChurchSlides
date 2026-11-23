@@ -241,6 +241,7 @@ internal static class SampleData
                 Id = I<ServiceItem>(101),
                 LocalShow = SmallPresentation(),
                 OriginShowId = I<Show>(5),
+                SkippedSlideIds = [I<Slide>(50)],
             },
             new PlaceholderItem
             {

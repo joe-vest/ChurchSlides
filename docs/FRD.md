@@ -801,4 +801,4 @@ End-to-end scenarios the finished app must pass. Use them as integration tests.
 
 **0.3 (in progress, 2026-11-23)**
 - Skipping: catalog Skipped marks as a per-Service default (SHOW-008, SVC-027, SVC-028), clarified SVC-021 and SVC-025, and LIVE-017 (skipped slides display when clicked). - C1.2a: Text Box keeps its Template Box name when detached (TPL-023, section 4 sketch). TPL-014 (resolution never fails, built-in fallback Template, case-insensitive box names). CCLI-004 clarified: first/last displayed slide, no punctuation clean-up. Slide gets `SkippedByDefault` in the section 4 sketch.
-- C1.2b (not yet executed): Show Copy keeps skip list and remembered Placeholder; forking keeps item and slide IDs and mints a new Show ID.
+- C1.2b: a Show Copy keeps the item's skip list and remembered Placeholder. Forking keeps the Service Item ID and every Slide and Text Box ID, and gives the local Show a new Show ID. Duplicating a Service starts it in Rehearse mode. A catalog Skipped mark is ignored for Shows with audio cues.

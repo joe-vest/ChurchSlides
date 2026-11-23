@@ -78,29 +78,29 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | VAR-001 | MUST | C1.2 | partial (C1.2a: name rule; uniqueness in C3.2) |
 | VAR-002 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | VAR-003 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
-| VAR-004 | MUST | C1.2 | todo |
+| VAR-004 | MUST | C1.2 | logic done (C1.2b); UI in a later chunk |
 | VAR-005 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | VAR-006 | MUST | C1.2 | logic done (C1.2a); UI in a later chunk |
 | VAR-007 | SHOULD | C3.2 | todo |
 | VAR-008 | MUST NOT | C1.2 | todo |
 | SVC-001 | MUST | C2.5 | todo |
 | SVC-002 | MUST | C2.5 | todo |
-| SVC-003 | MUST | C2.5 | todo |
+| SVC-003 | MUST | C2.5 | partial (C1.2b: duplicate logic; UI in C2.5) |
 | SVC-004 | MUST | C2.5 | todo |
 | SVC-005 | SHOULD | C3.3 | todo |
-| SVC-020 | MUST | C1.2, C2.5 | todo |
-| SVC-021 | MUST | C1.2, C2.5 | todo |
-| SVC-022 | MUST | C1.2, C2.5 | todo |
-| SVC-023 | MUST | C1.2, C2.5 | todo |
-| SVC-024 | SHOULD | C2.5 | todo |
-| SVC-025 | MUST | C1.2, C2.5 | todo |
+| SVC-020 | MUST | C1.2, C2.5 | logic done (C1.2b); UI in a later chunk |
+| SVC-021 | MUST | C1.2, C2.5 | logic done (C1.2b); UI in a later chunk |
+| SVC-022 | MUST | C1.2, C2.5 | logic done (C1.2b); UI in a later chunk |
+| SVC-023 | MUST | C1.2, C2.5 | partial (C1.2b: data kept; marker UI in C2.5) |
+| SVC-024 | SHOULD | C2.5 | logic done (C1.2b); UI in a later chunk |
+| SVC-025 | MUST | C1.2, C2.5 | logic done (C1.2b); UI in a later chunk |
 | SVC-026 | MUST | C1.2, C2.5 | todo |
-| SVC-030 | MUST | C3.3 | todo |
+| SVC-030 | MUST | C3.3 | partial (C1.2b: instantiate logic; UI in C3.3) |
 | SVC-031 | MUST | C3.3 | todo |
 | SVC-032 | MUST | C3.3 | todo |
 | SVC-033 | SHOULD | C3.3 | todo |
 | SVC-034 | MUST | C3.3 | todo |
-| SVC-035 | MUST | C3.3 | todo |
+| SVC-035 | MUST | C3.3 | logic done (C1.2b); UI in a later chunk |
 | AUD-001 | MUST | C4.1 | todo |
 | AUD-002 | MUST | C4.1 | todo |
 | AUD-003 | MUST | C4.1 | todo |
@@ -138,7 +138,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | TMR-015 | COULD | C5.1 | todo |
 | TMR-016 | MUST | C5.1 | todo |
 | ACT-001 | MUST | C5.2 | todo |
-| ACT-002 | MUST | C5.2 | todo |
+| ACT-002 | MUST | C5.2 | partial (C1.1 model, C1.2b id remap; processor in C5.2) |
 | ACT-003 | MUST | C5.2 | todo |
 | ACT-004 | MUST | C5.2 | todo |
 | ACT-010 | MUST | C5.2 | todo |
@@ -258,8 +258,8 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | FUT-002 | MUST | C1.5, C2.1 | todo |
 | FUT-003 | MUST | C1.5, C2.1 | todo |
 | FUT-004 | SHOULD | C1.5, C2.1 | todo |
-| SHOW-008 | MUST | C1.2a (flag), C1.2b (rules), C2.4 (UI) | partial (C1.2a: flag; rules in C1.2b; UI in C2.4) |
-| SVC-027 | MUST | C1.2b, C2.5 | todo |
-| SVC-028 | SHOULD | C1.2b, C2.5 | todo |
+| SHOW-008 | MUST | C1.2a (flag), C1.2b (rules), C2.4 (UI) | logic done (C1.2b); UI in a later chunk |
+| SVC-027 | MUST | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
+| SVC-028 | SHOULD | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
 | LIVE-017 | MUST | C1.5, C2.2 | todo |
 | TPL-014 | MUST | C1.2a | logic done (C1.2a) |

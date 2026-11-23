@@ -88,6 +88,12 @@ internal static class Fx
             Slides = [.. slides],
         };
 
+    /// <summary>A Song with slides 1..count (Slide IDs I(1)..I(count)), those listed in <paramref name="marked"/> Skipped by default.</summary>
+    public static Show Verses(int count, params int[] marked) => ShowOf(
+        Enumerable.Range(1, count).Select(n => SlideOf(n) with { SkippedByDefault = marked.Contains(n) }));
+
+    public static Id<Slide> S(int n) => I<Slide>(n);
+
     public static TemplateSet Set(IEnumerable<Template> templates, Id<Template>? libraryDefault = null, Id<Template>? categoryDefault = null) =>
         new(templates,
             [new Category { Id = I<Category>(1), Name = "Hymns", DefaultTemplateId = categoryDefault }],
