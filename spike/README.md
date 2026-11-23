@@ -66,6 +66,17 @@ watching the second monitor and the projector:
 - Select only the 4:3 background, choose Fit, press Open Output; then Fill, then Stretch.
 - Press B, C and L (Black, Clear, Logo) to show and hide each overlay.
 
+On the **Rich text** tab (S3), the left canvas is the editor (type in the dashed box) and the right
+one is the renderer that draws the Output. Pick a sample, try both **Token chips** designs, and:
+
+- Copy a few verses from Word and paste them into the box once in each **Paste from other programs**
+  mode. The note beside it says what was kept and dropped.
+- Use **Insert token**, then step over the token with the arrow keys, Backspace or Delete it, make it
+  bold or a color, copy and paste it inside the box.
+- Press **Flick** to swap the editor for the renderer's picture in the same place: the text shouldn't
+  move. Drag the window to the Output monitor to see both on the projector.
+- Ctrl+Z and Ctrl+Y undo and redo.
+
 On the **Startup** tab, say whether the startup times are acceptable.
 
 ## What to send back

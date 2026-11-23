@@ -58,6 +58,12 @@ public sealed class Results
         new("S2-5", S2, "On the 4:3 image: Fit shows black bars, Fill crops without distortion, Stretch distorts."),
         new("S2-6", S2, "Right and Left (Cut) change the slide with no noticeable delay."),
         new("S2-7", S2, "Black (B), Clear (C) and Logo (L) show and hide at once. Clear keeps the background."),
+        new("S3-1", S3, "Rich text tab: paste a few verses from Word in each paste mode. The note under the toolbar says what was dropped. Note which mode the product should use."),
+        new("S3-2", S3, "Tagged-run chips: Insert token, then the caret steps over it, Backspace and Delete remove it whole, Bold and a color apply to all of it, copy and paste inside the box keep it."),
+        new("S3-3", S3, "Container chips: the same checks as S3-2."),
+        new("S3-4", S3, "Typing in the 200-word sample (or any long box) feels immediate on this PC."),
+        new("S3-5", S3, "Drag this window to the Output monitor. With Flick, editor and renderer look the same on the projector."),
+        new("S3-6", S3, "Ctrl+Z and Ctrl+Y undo and redo typing and formatting, and the caret goes back to where it was."),
         new("S7-1", S7, "Startup time is acceptable (see the Startup tab for cold and warm figures)."),
     ];
 

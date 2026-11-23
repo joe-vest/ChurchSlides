@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -26,6 +27,18 @@ public static class ModelJson
     };
 
     public static string Of(RichText text) => JsonSerializer.Serialize(text, Options);
+
+    public static RichText? Parse(string json)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<RichText>(json, Options);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 }
 
 /// <summary>
@@ -63,7 +76,17 @@ public sealed class RichTextPanel : DockPanel
         HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
     };
 
+    private readonly ComboBox pasteModeBox = new()
+    {
+        Width = 250,
+        Margin = new Thickness(8, 0, 0, 0),
+        ItemsSource = Enum.GetValues<PasteMode>().Select(PasteFilter.Label).ToList(),
+        SelectedIndex = 0,
+        ToolTip = "What a paste from another program keeps",
+    };
+
     private readonly DispatcherTimer pause;
+    private readonly SnapshotUndo undo = new();
     private BoxStyle style = RichTextSamples.All[0].Style;
 
     public RichTextPanel()
@@ -78,7 +101,14 @@ public sealed class RichTextPanel : DockPanel
             AcceptsReturn = true,
             VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, // Hidden, not Disabled: ExtentHeight is then the text height
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            IsUndoEnabled = false, // D-2: the app's snapshot stack instead
+            AllowDrop = false, // drag and drop would bypass the paste filter
         };
+        TokenChips.Guard(Editor);
+        Editor.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (_, _) => Undo(), (_, e) => e.CanExecute = true));
+        Editor.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (_, _) => Redo(), (_, e) => e.CanExecute = true));
+        DataObject.AddCopyingHandler(Editor, OnCopying);
+        DataObject.AddPastingHandler(Editor, OnPasting);
         TextOptions.SetTextRenderingMode(Editor, TextRenderingMode.Grayscale);
         TextOptions.SetTextFormattingMode(Editor, TextFormattingMode.Ideal);
 
@@ -118,9 +148,23 @@ public sealed class RichTextPanel : DockPanel
         tools.Children.Add(Command("Size −", () => StepSize(-0.005)));
         tools.Children.Add(Command("Size +", () => StepSize(0.005)));
         tools.Children.Add(Command("Clear formatting", () => ClearFormatting()));
+        var insert = new Button { Content = "Insert token ▾", Padding = new Thickness(8, 2, 8, 2), Margin = new Thickness(8, 0, 0, 0), Focusable = false };
+        var menu = new ContextMenu { PlacementTarget = insert };
+        foreach (var (label, markup) in TokenChips.Menu)
+        {
+            var item = new MenuItem { Header = label };
+            item.Click += (_, _) => InsertToken(RichTextSamples.Tok(markup).Token);
+            menu.Items.Add(item);
+        }
+        insert.Click += (_, _) => menu.IsOpen = true;
+        tools.Children.Add(insert);
         tools.Children.Add(flick);
         tools.Children.Add(showValues);
         tools.Margin = new Thickness(0, 6, 0, 6);
+
+        PasteNote = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0), TextWrapping = TextWrapping.Wrap };
+        var pasteRow = Row(new TextBlock { Text = "Paste from other programs:", VerticalAlignment = VerticalAlignment.Center }, pasteModeBox, PasteNote);
+        pasteRow.Margin = new Thickness(0, 0, 0, 6);
 
         var canvases = new Grid { Margin = new Thickness(0, 4, 0, 0) };
         canvases.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -137,6 +181,7 @@ public sealed class RichTextPanel : DockPanel
         var body = new StackPanel();
         body.Children.Add(top);
         body.Children.Add(tools);
+        body.Children.Add(pasteRow);
         body.Children.Add(canvases);
         body.Children.Add(new TextBlock { Text = "Current model (saved form, updated on typing pauses):", Margin = new Thickness(0, 8, 0, 2) });
         body.Children.Add(jsonBox);
@@ -158,6 +203,14 @@ public sealed class RichTextPanel : DockPanel
     public Button RunButton { get; }
     public TextBlock ResultText { get; }
 
+    /// <summary>What the last paste kept and dropped.</summary>
+    private TextBlock PasteNote { get; }
+
+    public PasteMode PasteMode
+    {
+        get => (PasteMode)pasteModeBox.SelectedIndex;
+    }
+
     /// <summary>Room below the results for the checklist (C0.3b).</summary>
     public StackPanel ExtraPanel { get; }
 
@@ -168,9 +221,6 @@ public sealed class RichTextPanel : DockPanel
     }
 
     public Size BoxSize => new(Math.Round(style.Geometry.Width * CanvasWidth), Math.Round(style.Geometry.Height * CanvasHeight));
-
-    /// <summary>Raised on each typing pause with the current model (undo snapshots hook in here).</summary>
-    public event Action<RichText>? Paused;
 
     public RichText Model => FlowConverter.ToModel(Editor.Document, CanvasHeight);
 
@@ -212,7 +262,92 @@ public sealed class RichTextPanel : DockPanel
         }
         Editor.Document = FlowConverter.ToDocument(text, style, CanvasHeight, Chips);
         AlignVertically();
+        undo.Reset(Model);
         OnPause();
+    }
+
+    // ---- Undo (D-2), copy, paste and tokens: model edits reloaded into the editor ----
+
+    /// <summary>The selection as plain-text offsets, widened to whole tokens.</summary>
+    public (int Start, int End) SelectionOffsets()
+    {
+        var (start, end) = TokenChips.ExpandToTokens(Editor.Selection);
+        return (EditorText.Offset(Editor.Document, start), EditorText.Offset(Editor.Document, end));
+    }
+
+    /// <summary>Loads a model in place of the current one (same box) and selects by offset.</summary>
+    public void Restore(RichText text, int selectionStart, int selectionEnd)
+    {
+        pause.Stop();
+        Editor.Document = FlowConverter.ToDocument(text, style, CanvasHeight, Chips);
+        AlignVertically();
+        Editor.Selection.Select(EditorText.PointerAt(Editor.Document, selectionStart), EditorText.PointerAt(Editor.Document, selectionEnd));
+        OnPause();
+        Editor.Focus();
+    }
+
+    /// <summary>Replaces the selection with a fragment and puts the caret after it.</summary>
+    public void ReplaceSelection(RichText fragment)
+    {
+        FlushPause();
+        var (start, end) = SelectionOffsets();
+        var text = ModelEdit.Splice(Model, start, end, fragment);
+        var caret = start + ModelEdit.Length(fragment);
+        Restore(text, caret, caret);
+    }
+
+    /// <summary>Inserts a token at the selection. A Timer token only goes in an empty box (TMR-009).</summary>
+    public bool InsertToken(Token token)
+    {
+        if (token is TimerToken && !TokenChips.TimerAllowedIn(Model))
+        {
+            PasteNote.Text = "A Timer token goes in an empty Text Box on its own (TMR-009).";
+            return false;
+        }
+        ReplaceSelection(new RichText { Paragraphs = [new ChurchSlides.Domain.Text.Paragraph { Inlines = [new TokenRun { Token = token }] }] });
+        return true;
+    }
+
+    /// <summary>Takes the pending typing-pause snapshot now.</summary>
+    public void FlushPause()
+    {
+        if (pause.IsEnabled)
+            OnPause();
+    }
+
+    public void Undo()
+    {
+        FlushPause();
+        if (undo.Undo() is { } snapshot)
+            Restore(snapshot.Text, snapshot.SelectionStart, snapshot.SelectionEnd);
+    }
+
+    public void Redo()
+    {
+        FlushPause();
+        if (undo.Redo() is { } snapshot)
+            Restore(snapshot.Text, snapshot.SelectionStart, snapshot.SelectionEnd);
+    }
+
+    /// <summary>Our copies carry the model fragment, so a paste here restores tokens and formatting exactly.</summary>
+    private void OnCopying(object sender, DataObjectCopyingEventArgs e)
+    {
+        if (e.IsDragDrop)
+            return;
+        var (start, end) = SelectionOffsets();
+        var fragment = ModelEdit.Slice(Model, start, end);
+        e.DataObject.SetData(PasteFilter.ModelFormat, ModelJson.Of(fragment));
+        e.DataObject.SetData(DataFormats.UnicodeText, fragment.ToPlainText().Replace("\n", Environment.NewLine, StringComparison.Ordinal));
+    }
+
+    /// <summary>Every paste goes through the filter (C0.3 decision 3) instead of the control's own paste.</summary>
+    private void OnPasting(object sender, DataObjectPastingEventArgs e)
+    {
+        e.CancelCommand();
+        var result = PasteFilter.Read(e.DataObject, PasteMode, style, CanvasHeight);
+        PasteNote.Text = $"Last paste: {result.Note}.";
+        // Not now: the control is inside its own change block and won't let the document be replaced.
+        Dispatcher.BeginInvoke(() => ReplaceSelection(result.Fragment));
     }
 
     /// <summary>
@@ -275,7 +410,7 @@ public sealed class RichTextPanel : DockPanel
         Editor.Selection.Select(start, end);
         var range = new TextRange(start, end);
         var doc = Editor.Document;
-        foreach (var property in FormattingProperties)
+        foreach (var property in TokenChips.FormattingProperties)
         {
             // Splits runs at the range's edges, so the clearing below stays inside the range.
             range.ApplyPropertyValue(property, doc.GetValue(property));
@@ -287,22 +422,13 @@ public sealed class RichTextPanel : DockPanel
             {
                 if (whole || (range.Start.CompareTo(element.ContentStart) <= 0 && range.End.CompareTo(element.ContentEnd) >= 0))
                 {
-                    foreach (var property in FormattingProperties)
+                    foreach (var property in TokenChips.FormattingProperties)
                         element.ClearValue(property);
                 }
             }
         }
         Editor.Focus();
     }
-
-    private static readonly DependencyProperty[] FormattingProperties =
-    [
-        TextElement.FontFamilyProperty,
-        TextElement.FontSizeProperty,
-        TextElement.ForegroundProperty,
-        TextElement.FontWeightProperty,
-        TextElement.FontStyleProperty,
-    ];
 
     /// <summary>The paragraph (when wholly selected) and every inline in it, Spans included.</summary>
     private static IEnumerable<TextElement> Elements(System.Windows.Documents.Paragraph paragraph, bool includeParagraph)
@@ -358,7 +484,8 @@ public sealed class RichTextPanel : DockPanel
         var model = Model;
         jsonBox.Text = ModelJson.Of(model);
         RefreshRenderer(model);
-        Paused?.Invoke(model);
+        var (start, end) = (EditorText.Offset(Editor.Document, Editor.Selection.Start), EditorText.Offset(Editor.Document, Editor.Selection.End));
+        undo.Record(model, start, end);
     }
 
     private void RefreshRenderer() => RefreshRenderer(Model);

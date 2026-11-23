@@ -46,6 +46,11 @@ public sealed class RichTextTests(RichTextPanel panel, Action<string> status)
             status("S3: scripted edits…");
             foreach (var design in Designs)
                 ScriptedEdits(design);
+            status("S3: token chips, paste and undo…");
+            foreach (var design in Designs)
+                ChipChecks(design);
+            PasteChecks();
+            UndoCheck();
             status("S3: timings…");
             await Timings();
             Add("TMR-009 check: lone Timer / Timer next to text",
@@ -324,6 +329,123 @@ public sealed class RichTextTests(RichTextPanel panel, Action<string> status)
                 panel.ClearFormatting();
             },
             FlowConverter.Normalize(tokens.Text.WithoutFormatting()));
+    }
+
+    // ---- S3-c: chips, paste, undo (C0.3b) ----
+
+    /// <summary>Caret, typing, deletion, copy and paste next to a token, through the control's own commands.</summary>
+    private void ChipChecks(ChipDesign design)
+    {
+        panel.Chips = design;
+        var style = All[0].Style;
+        var bold = new RunFormat { Bold = true };
+        // "ab " 0-3, token 3-15, " cd" 15-18.
+        var start = Doc(P(T("ab "), Tok("{{preacher}}", bold), T(" cd")));
+
+        panel.Load(start, style);
+        panel.Editor.Focus();
+        panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 3);
+        EditingCommands.MoveRightByCharacter.Execute(null, panel.Editor);
+        var right = EditorText.Offset(panel.Editor.Document, panel.Editor.CaretPosition);
+        panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 15);
+        EditingCommands.MoveLeftByCharacter.Execute(null, panel.Editor);
+        var left = EditorText.Offset(panel.Editor.Document, panel.Editor.CaretPosition);
+        Add($"Chip: Right and Left step over a token ({Name(design)})",
+            right == 15 && left == 3 ? "yes" : $"no: Right from its start lands at {right} (want 15), Left from its end at {left} (want 3)");
+
+        Edit(design, "type right after a token", style, start,
+            () =>
+            {
+                panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 15);
+                Type(panel.Editor, "x");
+            },
+            Doc(P(T("ab "), Tok("{{preacher}}", bold), T("x", bold), T(" cd"))));
+
+        Edit(design, "Backspace after a token removes it whole", style, start,
+            () =>
+            {
+                panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 15);
+                EditingCommands.Backspace.Execute(null, panel.Editor);
+            },
+            Doc(P(T("ab  cd"))));
+
+        Edit(design, "Delete before a token removes it whole", style, start,
+            () =>
+            {
+                panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 3);
+                EditingCommands.Delete.Execute(null, panel.Editor);
+            },
+            Doc(P(T("ab  cd"))));
+
+        Edit(design, "copy a token and paste it at the end (clipboard)", style, start,
+            () =>
+            {
+                var doc = panel.Editor.Document;
+                panel.Editor.Selection.Select(EditorText.PointerAt(doc, 3), EditorText.PointerAt(doc, 15));
+                ApplicationCommands.Copy.Execute(null, panel.Editor);
+                panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 18);
+                ApplicationCommands.Paste.Execute(null, panel.Editor);
+                panel.Dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle); // the paste lands after the command
+            },
+            Doc(P(T("ab "), Tok("{{preacher}}", bold), T(" cd"), Tok("{{preacher}}", bold))));
+
+        Edit(design, "insert a Timer token into a box with text (TMR-009: refused)", style, start,
+            () => panel.InsertToken(new TimerToken { Name = "ServiceStart" }),
+            start);
+    }
+
+    /// <summary>A Word-like paste (RTF with plain text) in each mode, through the paste filter.</summary>
+    private void PasteChecks()
+    {
+        const string rtf = @"{\rtf1\ansi\deff0{\fonttbl{\f0 Calibri;}{\f1 Georgia;}}{\colortbl;\red255\green0\blue0;\red255\green255\blue0;}" +
+            @"\f0\fs22 Plain, \b bold\b0 , \i italic\i0 , {\f1\fs48 big Georgia}, {\cf1 red}, \ul underlined\ulnone , {\highlight2 highlighted} and \{\{preacher\}\}.\par " +
+            @"Second paragraph.\par}";
+        const string text = "Plain, bold, italic, big Georgia, red, underlined, highlighted and {{preacher}}.\r\nSecond paragraph.";
+        var data = new DataObject();
+        data.SetData(DataFormats.Rtf, rtf);
+        data.SetData(DataFormats.UnicodeText, text);
+        foreach (var mode in Enum.GetValues<PasteMode>())
+        {
+            var result = PasteFilter.Read(data, mode, All[0].Style, RichTextPanel.CanvasHeight);
+            Add($"Paste from Word-like RTF: {PasteFilter.Label(mode)}", $"{Describe(result.Fragment)}. Note: {result.Note}");
+        }
+    }
+
+    /// <summary>D-2: typing and formatting undone and redone by snapshot, with the selection put back.</summary>
+    private void UndoCheck()
+    {
+        panel.Chips = ChipDesign.TaggedRun;
+        var sample = All[0];
+        panel.Load(sample.Text, sample.Style);
+        var original = panel.Model;
+
+        panel.Editor.CaretPosition = EditorText.PointerAt(panel.Editor.Document, 7);
+        Type(panel.Editor, "XYZ");
+        panel.FlushPause();
+        var typed = panel.Model;
+
+        var doc = panel.Editor.Document;
+        panel.Editor.Selection.Select(EditorText.PointerAt(doc, 0), EditorText.PointerAt(doc, 5));
+        panel.ApplyToSelection(TextElement.FontWeightProperty, FontWeights.Bold);
+        panel.FlushPause();
+
+        ApplicationCommands.Undo.Execute(null, panel.Editor);
+        var afterUndo = panel.Model;
+        var caret = EditorText.Offset(panel.Editor.Document, panel.Editor.CaretPosition);
+        ApplicationCommands.Undo.Execute(null, panel.Editor);
+        var afterSecondUndo = panel.Model;
+        ApplicationCommands.Redo.Execute(null, panel.Editor);
+        var afterRedo = panel.Model;
+
+        var problems = new List<string>();
+        if (Difference(typed, afterUndo) is { } a)
+            problems.Add($"first Ctrl+Z: {a}");
+        if (Difference(original, afterSecondUndo) is { } b)
+            problems.Add($"second Ctrl+Z: {b}");
+        if (Difference(typed, afterRedo) is { } c)
+            problems.Add($"Ctrl+Y: {c}");
+        Add("Undo (D-2): type, bold, Ctrl+Z, Ctrl+Z, Ctrl+Y", problems.Count == 0 ? "as expected" : string.Join(" | ", problems));
+        Add("Undo (D-2): caret put back where it was after typing", caret == 10 ? "yes (offset 10)" : $"no: at {caret}, want 10");
     }
 
     private void ApplyRange(int start, int end, DependencyProperty property, object value)

@@ -1,17 +1,17 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C0.2 done)
+Last updated: 2026-11-23 (C0.3 done)
 
 ## Chunks
 
 | Chunk | Title | Status |
 |---|---|---|
 | C0.1 | Repository and documentation setup | done |
-| C0.2 | Spike A: output and crossfade (one combined spike program) | done: C0.2a shell (System S8, Output S1, Startup S7), C0.2b slides (Slides S2, Memory S6). Ready for G0 once C0.3 and C0.4 have added their tabs |
-| C0.3 | Spike B: rich text | in progress: C0.3a converter, renderer and automatic run done; C0.3b tokens, paste, undo next |
+| C0.2 | Spike A: output and crossfade (one combined spike program) | done: C0.2a shell (System S8, Output S1, Startup S7), C0.2b slides (Slides S2, Memory S6). Ready for G0 once C0.4 has added its tabs |
+| C0.3 | Spike B: rich text | done: C0.3a converter, renderer and automatic run, C0.3b chips, paste and undo (Rich text S3 tab). Development-PC figures and quirks below |
 | C0.4 | Spike C: audio and timer | todo |
-| G0 | Owner runs the spike program on the church machine | blocked on C0.2-C0.4 |
+| G0 | Owner runs the spike program on the church machine | blocked on C0.4 |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
@@ -75,6 +75,19 @@ Last updated: 2026-11-23 (C0.2 done)
 - Markdown lint warnings in docs (cosmetic).
 - Spike (before G0): the self-contained publish ships the runtime pack the installed SDK knows (.NET 10.0.3 with SDK 10.0.103), older than the dev PC's runtime (10.0.15). Update the SDK before publishing for G0. The spike's "GPU driver" line reads the first display-adapter registry key only; fine on the church PC's single GPU.
 - For the G0 analysis (C0.2b, development PC at 3840×2160): placing a decoded background into an output-size bitmap costs far more than decoding it (about 120 ms against 7-28 ms), and UI-thread pre-render dropped about 2 frames per 300 ms crossfade against 0.6 on the render thread. If the church figures agree, C2.1 could draw the decoded background directly instead of rasterizing it, and pre-render on the render thread. The spike ignores EXIF orientation.
+- For the G0 analysis and C2.1/C2.3 (C0.3, development PC; `--auto-s3`). S3-a: all samples and 500 random documents round-trip unchanged with both chip designs; all scripted edits give the expected model. S3-e: unset properties stay unset. S3-b: every sample breaks lines the same except the long one, where the editor wraps one word early. The editor lays out about 5 px narrower than its box (probably the caret). Hymn lines with random word formatting: 12 of 100 break differently at the box width, 2 of 100 with the editor 5 px wider. Ink-pixel differences of 0.5-6.5% are edge smoothing only (the overlays match). S3-d: renderer 2.3 ms per slide on average, keystroke to next frame 27 ms on average (max 50-80 ms). A geometry outline (SLD-025) costs about 19 ms on average and up to 60 ms per slide.
+- C2.3 quirk list from C0.3 (WPF `RichTextBox`):
+  - Line width: decide at G0 between widening the editor by the measured allowance (check whether it is constant or grows with font size) and drawing the editor's `FlowDocument` (D-4). Leftover differences are on lines that mix font sizes, runs of spaces or lone punctuation.
+  - `FormattedText` trims with an ellipsis by default (`Trimming = WordEllipsis`). The renderer must set `None`.
+  - The control can't align text vertically. Top padding on the document does it, and `ExtentHeight` only gives the text height with `VerticalScrollBarVisibility` Hidden, not Disabled.
+  - The control queues typed text and inserts it at Background priority. A raised `TextInput` event is ignored. Tests type with `TextCompositionManager.StartComposition` and then let the dispatcher run.
+  - The control merges neighbouring runs whose formatting values are equal (brushes compare by value). Two tagged-run tokens side by side become one run, and `ClearAllProperties` (which also clears the chip shading) merges a token into the text beside it. Fix in the spike: the converter reads `{{...}}` markup in any run as tokens, a repair step runs after each change, and Clear formatting clears only the five properties.
+  - Range formatting (`ApplyPropertyValue`) skips `InlineUIContainer`, so container chips must be formatted directly.
+  - The control's own copy (XAML) loses the token tag. Tagged-run tokens survive only as markup, container chips vanish, and a pasted copy gets explicit formatting. The spike copies its own model fragment to the clipboard and pastes by editing the model (slice and splice by offset) and reloading the editor. A paste handler can't replace the document straight away (the control is in a change block), so it runs on the dispatcher.
+  - Container chips make lines taller (148 against 119 px on the token sample), so the editor stops matching the Output. A long token can't wrap, and text typed after one doesn't carry on its formatting. Tagged-run chips match the renderer but need the guards (caret, typing beside, repair). Pick at G0 (S3-2, S3-3).
+  - A Word-like paste with "keep five" puts Calibri at 11 pt (0.042 of canvas height) on every run, so Template defaults stop applying (TPL-024). The owner picks the paste mode at G0 (S3-1).
+  - Undo by snapshot on typing pauses (D-2) restores both the model and the caret offset.
+  - Domain needs a `RichText` normalise step (merge neighbouring runs with equal formatting, a lone empty paragraph is Empty, token markup in a text run becomes a token). The spike has it as `FlowConverter.Normalize` and `Merge`.
 
 ## Known issues
 

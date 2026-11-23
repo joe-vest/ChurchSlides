@@ -32,6 +32,7 @@ public partial class MainWindow : Window
         SlidesPanel.Children.Add(new ChecklistPanel(results, Results.S2));
         StartupPanel.Children.Add(new ChecklistPanel(results, Results.S7));
         RichTextTab.Content = richText;
+        richText.ExtraPanel.Children.Add(new ChecklistPanel(results, Results.S3));
         richText.RunButton.Click += async (_, _) =>
         {
             await RunRichText();
