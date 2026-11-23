@@ -15,7 +15,7 @@ Last updated: 2026-11-23
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
-| C1.3c | Model and storage changes from the document review | todo |
+| C1.3c | Model and storage changes from the document review | planned (docs/plans/C1.3c.md, agreed), next to execute |
 | C1.4 | Library watching and search | todo |
 | C1.5 | Navigation engine (review gate) | todo |
 | C2.1 | Slide renderer and image pipeline | todo |
