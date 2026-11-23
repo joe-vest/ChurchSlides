@@ -44,7 +44,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SLD-001 | MUST | C1.1 | partial (C1.1: types and file format; behavior in later chunks) |
 | SLD-002 | MUST | C2.1 | todo |
 | SLD-003 | MUST | C2.1 | todo |
-| SLD-004 | SHOULD | C2.4 | todo |
+| SLD-004 | SHOULD | C2.6 (after Q-012) | todo |
 | SLD-005 | MUST | C1.1 | partial (C1.1: types and file format; behavior in later chunks) |
 | SLD-006 | MUST | C2.1 | logic done (C1.2a); UI in a later chunk |
 | SLD-007 | MUST | C2.1 | todo |
@@ -235,7 +235,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SCR-010 | MUST | C7.2 | todo |
 | SCR-011 | MUST | C7.2 | todo |
 | SCR-012 | MUST | C7.2 | todo |
-| SCR-013 | MUST | C7.2 | todo |
+| SCR-013 | MUST | C1.3c, C7.2 | todo |
 | SCR-014 | COULD | C7.2 | todo |
 | SCR-015 | COULD | C7.2 | todo |
 | SCR-016 | MUST NOT | C7.2 | todo |
@@ -263,3 +263,14 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SVC-028 | SHOULD | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
 | LIVE-017 | MUST | C1.5, C2.2 | todo |
 | TPL-014 | MUST | C1.2a | logic done (C1.2a) |
+| LIB-013 | MUST | C1.3c, C6.1, C6.2 | todo |
+| CAT-010 | MUST | C1.3c, C2.4, C7.2 | todo |
+| LIVE-018 | MUST | C1.5, C2.2 | todo |
+| LIVE-041 | MUST | C1.5 | todo |
+| MODE-005 | MUST | C1.5, C2.2 | todo |
+| ACT-005 | MUST | C1.5, C5.2 | todo |
+| ACT-006 | MUST | C5.2 | todo |
+| ACT-033 | MUST | C1.3c, C5.2 | todo |
+| AUD-021 | MUST | C4.1 | todo |
+| TMR-017 | MUST | C5.1 | todo |
+| CCLI-018 | MUST | C6.1 | todo |

@@ -1,9 +1,9 @@
 # Architecture: Church Presentation App
 
-Version: 0.1 (draft for review)
+Version: 0.2
 Date: 2026-11-23
-Input: `Functional Requirements  Church Presentation App.md` (FRD v0.1)
-Status: Decisions in §14 and §15 confirmed by the product owner on 2026-11-23 (Q-A7: option 3; all other recommendations accepted). Ready for scaffolding and the spike.
+Input: `docs/FRD.md` (FRD v0.3)
+Status: Decisions in §14 and §15 confirmed by the product owner on 2026-11-23. v0.2 adds the decisions from the document review of the same day (D-10 to D-13, and changes in §4.1, §5, §6, §7, §12 and §16).
 
 Requirement IDs (for example `AUD-017`) refer to the FRD. `ChurchSlides` is the product name (Q-010, resolved).
 
@@ -92,7 +92,8 @@ A modular monolith. One process, a handful of assemblies with strict dependency 
 
 - **One WPF UI thread** runs all view-models, the Engine, and the Output. Reasons: simplicity, no cross-thread marshalling bugs, and the Engine's state is single-writer.
 - **Smooth crossfades don't depend on the UI thread being idle.** A crossfade animates the opacity of two pre-rendered bitmap layers. WPF runs that on its independent composition thread, so an autosave or index update on the UI thread won't stutter it.
-- **Background work** runs on the thread pool and posts results back: image downscaling, thumbnail rendering to bitmap, search index rebuild, Bible index build, file hashing, autosave.
+- **Background work** runs on the thread pool and posts results back: image decoding and downscaling, search index rebuild, Bible index build, file hashing, autosave.
+- **Rendering to bitmaps is not thread-pool work.** WPF can only build visuals and run `RenderTargetBitmap` on a thread with a dispatcher (STA). Pre-rendering a 1440×900 slide can take tens of milliseconds, and on the UI thread that delays hotkeys and Cue posts (AUD-018 allows 50 ms). Plan: a single **render thread** (STA, own dispatcher) that builds frozen bitmaps from `RenderModel`s and hands them to the UI thread. Spike S4/S6 measures UI-thread stalls first. If they stay under about 10 ms, the render thread can wait.
 - **High-priority audio poller:** one dedicated thread polls audio position every ~10 ms for cue accuracy (AUD-018), then posts the cue to the UI thread.
 - **Kestrel** uses its own threads. It never touches Engine state directly. It enqueues commands (§6) and reads an immutable state snapshot.
 
@@ -142,7 +143,19 @@ Slide + Show + Template chain + Service context  ──►  RenderModel (immutab
 
 Resolution never fails (TPL-014). Anything wrong is worked around and listed in `RenderModel.Problems` (missing Template, unknown Template Box, empty or undefined Variable, undefined Timer, ...), which the pre-service check reads. If no Template resolves, a built-in plain Template is used. Timer tokens resolve to `RenderTimerRun`s that carry the Timer's warning settings, and the renderer fills in the live value. The resolver lives in `ChurchSlides.Domain.Resolution`: `TemplateResolver`, `SlideResolver`, `TokenMarkup`, `TextBoxBinding`.
 
-Resolved models are cached by key (`slideId`, `templateVersion`, `variablesVersion`, `canvas`). Invalidation is by version counters on Templates, Variables, and Shows. This satisfies TPL-003/013 (changing a Template affects the next display) without touching slide files.
+Resolved models are cached. The key must hold everything the result depends on, or stale output reaches the projector:
+
+| Key part | Why |
+|---|---|
+| `serviceId`, `itemId`, `slideId` | Variables belong to a Service. The same slide in two items can differ, because the copyright box depends on the item's skip list (CCLI-004 "first/last displayed"). |
+| Show version | Slide content and metadata tokens (`{{show.title}}`). |
+| Template version (all Templates in the chain) | TPL-003. |
+| Category version | A Category's default Template can change (TPL-013). |
+| Library settings version | Copyright format, CCLI licence number, Library default Template. |
+| Service version | Variables and skip lists. |
+| Canvas size | Output vs Preview vs thumbnail. |
+
+Invalidation is by version counters. This satisfies TPL-003/013 (changing a Template affects the next display) without touching slide files. A simpler alternative is acceptable: clear the whole cache on any Library change, since resolution is cheap. Bitmaps are the expensive part.
 
 ### 5.2 Service navigation (items and slides are two levels, always)
 
@@ -157,7 +170,11 @@ Navigation exists at both levels:
 
 Item-level moves are first-class commands (§6.1), not a side effect of slide moves. They are what the operator uses to abandon a song, and they are the natural hook for item-level behaviour such as audio (§6.5, Q-A7).
 
-`ServiceSequence` is a pure function: `Service → IReadOnlyList<(ItemId, SlideId)>`, grouped by item, skipping skipped slides, unfilled Placeholders, and missing Shows (LIVE-006). Next and Previous are index moves in that list, which gives LIVE-005 (crosses item boundaries) and LIVE-007 (stops at the ends) for free. It is rebuilt whenever the Service or a referenced Show changes, and the cursor is re-anchored by `(ItemId, SlideId)` so edits during a presentation don't lose position (LIVE-040).
+`ServiceSequence` is a pure function: `Service → IReadOnlyList<(ItemId, SlideId, IsDisplayable)>`, grouped by item. It holds **every** slide, with a flag. Skipped slides, slides of unfilled Placeholders and missing Shows, and items with no displayable slide are listed but not displayable (LIVE-006). The skip list is ignored for a Show whose Audio Track has Cues (SVC-025). Every slide is in the list because the operator can click a skipped slide (LIVE-017). Next and Previous then move to the nearest displayable entry in either direction. This gives LIVE-005 (crosses item boundaries) and LIVE-007 (stops at the ends) for free.
+
+The list is rebuilt whenever the Service or a referenced Show changes, and the cursor is re-anchored by `(ItemId, SlideId)` so edits during a presentation don't lose position (LIVE-040). If the current slide or item was removed (LIVE-041), the cursor remembers its old neighbours: the Output keeps the last frame, Next goes to the slide that followed it, and Previous to the one before it.
+
+**Not presenting.** Before Go Live or Rehearse, the session has a *selected* slide but no current slide. The Output shows black (LIVE-018). Starting presentation displays the selected slide, or the first displayable one (LIVE-009).
 
 ---
 
@@ -166,17 +183,19 @@ Item-level moves are first-class commands (§6.1), not a side effect of slide mo
 ### 6.1 Single command API (FUT-004)
 
 ```
-ICommandApi
-  Next() Previous()                            // slide level, crosses items
-  NextItem() PreviousItem()                    // item level (proposed addition to the FRD)
-  GoToSlide(item, slide) GoToItem(item)
-  Black() Clear() Logo()                       // toggles, mutually exclusive
+ICommandApi                                    // every call also takes an Origin: Operator or Automation
+  Next() Previous()                            // slide level, crosses items (LIVE-005)
+  NextItem() PreviousItem()                    // item level (LIVE-016)
+  GoToSlide(item?, slide) GoToItem(item)       // item omitted = within the current Show (ACT-022)
+  ToggleScreen(Black|Clear|Logo)               // operator controls: toggles, mutually exclusive (LIVE-013)
+  SetScreen(Normal|Black|Clear|Logo)           // Action commands: set, not toggle (ACT-026..028, ACT-033)
   StartAudio() StopAudio() RestartAudio()
   StartTimer(name) StopTimer(name)
-  StartPresenting(service) StopPresenting()
+  Select(item, slide)                          // not presenting: selection only (DEC-021)
+  StartPresenting(service, mode) StopPresenting()   // Go Live / Rehearse (MODE-005)
 ```
 
-Operator buttons, hotkeys, the phone remote, and the Action processor all call this one interface. There is one implementation (`PresentationSession`) and one place for logic like "navigating while Black is active keeps the screen state" (LIVE-014).
+Operator buttons, hotkeys, the phone remote, and the Action processor all call this one interface. There is one implementation (`PresentationSession`) and one place for logic like "navigating while Black is active keeps the screen state" (LIVE-014). Going to the slide that is already current changes nothing and fires no events (ACT-013).
 
 ### 6.2 `PresentationSession` state
 
@@ -185,17 +204,19 @@ An immutable **`PresentationState`** snapshot (current item *and* slide, with th
 ### 6.3 Action processor (ACT)
 
 - Subscribes to Engine events: `ServiceStarted`, `ShowStarted/Ended`, `SlideDisplayed/Ended`, `TimerExpired`, `AudioEnded`.
-- Finds Actions attached to the Slide, Show, and Service, schedules delayed ones with a `CancellationTokenSource` per pending Action, and cancels them on slide or item change (ACT-004).
-- Executes Commands by calling `ICommandApi`, so Actions and operator input follow identical rules (ACT-020..030).
-- **Loop guard** (ACT-040): a sliding window counts Action-originated slide changes. More than 20 in 1 s with no user input stops processing and raises a warning.
+- **Event order is fixed and lives in `PresentationSession`** (ACT-005). A move runs: operator audio stop (DEC-020) → `SlideEnded` → `ShowEnded` → display the new slide → `ShowStarted` → `SlideDisplayed`. Each step runs its zero-delay Actions to completion before the next. This order is what makes song A → song B work: A's audio stops before B's `StartAudio`, and an author's `ShowEnded → StopAudio` on A can't stop B. Commands issued by Actions during a step are queued and run after the current move completes, so a move never starts inside another.
+- Finds Actions attached to the Service, Service Item, Show, and Slide, and runs them in that order (ACT-006). Delayed ones are scheduled with a `CancellationTokenSource` per pending Action and cancelled on slide or item change (ACT-004). `StopPresenting` cancels all of them.
+- Executes Commands by calling `ICommandApi` with `Origin = Automation`, so Actions and operator input follow identical rules (ACT-020..033).
+- **Loop guard** (ACT-040): a sliding window counts Action-originated slide changes. More than 20 in 1 s with no user input pauses Actions **for the current item** and raises a warning. The pause ends when the current item changes to a different one.
 - Exposes "pending delayed action" info for the operator indicator (ACT-043).
 - Actions pointing at missing targets are no-ops (ACT-041).
 
 ### 6.4 Timers (TMR)
 
 - `TimerService` owns one `TimerRuntime` per Timer in the current Service.
-- **Time source:** a single tick loop aligned to wall-clock second boundaries (compute the delay to the next whole second, then re-align each tick), not an accumulating `DispatcherTimer` interval (TMR-011). Countdown-to-clock timers compute `target − DateTime.Now`. Duration timers store `endsAtUtc` at start, so they never drift. Stopped timers display the full duration or live remaining time (TMR-014).
-- **Expiry:** state machine Stopped → Running → Expired, with `TimerExpired` fired exactly once per start. Late-start for clock timers goes straight to Expired with no trigger (TMR-007/008).
+- **Time source:** a single tick loop aligned to wall-clock second boundaries (compute the delay to the next whole second, then re-align each tick), not an accumulating `DispatcherTimer` interval (TMR-011). Countdown-to-clock timers compute `target − IClock.Now` (local time). Duration timers store `endsAtUtc` at start, so they never drift. Stopped timers display the full duration or live remaining time (TMR-014).
+- **Expiry:** state machine Stopped → Running → Expired, with `TimerExpired` fired exactly once per start. Late-start for clock timers goes straight to Expired with no trigger (TMR-007/008). Starting an Expired Timer restarts it (TMR-012).
+- **Not saved** (TMR-017): runtimes live only in the presentation session. `StopPresenting` resets all to Stopped.
 - **Ticks produce an event of `(timerName, displayText, isWarning)`.** They don't produce a new `PresentationState` and they don't re-render slides (TMR-010).
 - All time access goes through `IClock`, so tests can run a whole Service morning in milliseconds.
 
@@ -203,18 +224,21 @@ An immutable **`PresentationState`** snapshot (current item *and* slide, with th
 
 - `IAudioPlayer` (play from trim start, stop, position, ended event) and `IPlaybackClock` (position as `TimeSpan`) are Engine-owned interfaces. NAudio implements them in `Audio`. A future video player implements the same clock (FUT-002, AUD-020).
 - `CueController` listens to the clock at ~10 ms. When position crosses the next Cue, it calls `GoToSlide` for the cue's specific slide (self-correcting, AUD-006). Cues are stored as absolute file time (AUD-005). Cues only drive slides while the audio's Show is the current item (AUD-017).
-- Starting audio stops any other playing audio, and a start while already playing is a no-op (AUD-015/016).
-- **Leaving an item with audio playing** is the case where the item level matters. Slide navigation inside the song never touches audio (DEC-013). Moving to a different *item* is a distinct gesture, and the engine emits an `ItemChanged(from, to, initiatedBy)` event so the policy lives in one place. The policy is decided (Q-A7, option 3): **an operator-initiated change to a different item stops the audio** (hard stop, no fade, per AUD-002), and the UI shows a brief "Audio stopped" notice. "Operator-initiated" means anything entering via the command API from the operator UI, hotkeys, clicker, or phone remote: Next/Previous crossing an item boundary, Next/Previous item, clicking another item or a slide in another item. Changes caused by **Actions or Cues** (including `GoToItem` and timer-expiry jumps) do **not** stop audio, so authors keep full control (`ShowEnded → StopAudio` remains available as an explicit Action). Slide moves within the same item never touch audio (DEC-013). Each command carries an `Origin` (Operator or Automation) for this purpose. This supersedes the FRD's Q-003 default. AUD-017 still applies when automation moves away from a playing song: audio continues, cues stop driving slides. The state also exposes "audio playing from item X" so the operator UI can show it on the originating item's header even after the operator has moved on.
+- Starting audio stops any other playing audio, and a start while the same Show's track is already playing is a no-op (AUD-015/016). `StartAudio` does nothing unless the current slide is the first displayable slide of the owning Show (AUD-021). Because ACT-005 displays the new slide before `ShowStarted` runs, a song entered at its first slide starts, and one entered at its last slide (Previous) or a middle slide (click) doesn't. `RestartAudio` from another item first goes back to the first slide of the song's item, then plays (AUD-013).
+- **Default device changes.** Plugging in the projector over HDMI often makes it the Windows default audio device. The player must survive a device change mid-song (NAudio raises a playback-stopped error), log it, and show "Audio stopped: output device changed". Whether to resume automatically on the new default device is measured in spike S4 and decided at G4.
+- **Leaving an item with audio playing** is the case where the item level matters. Slide navigation inside the song never touches audio (DEC-013). Moving to a different *item* is a distinct gesture, and the engine emits an `ItemChanged(from, to, initiatedBy)` event so the policy lives in one place. The policy is decided (Q-A7, option 3): **an operator-initiated change to a different item stops the audio** (hard stop, no fade, per AUD-002), and the UI shows a brief "Audio stopped" notice. "Operator-initiated" means anything entering via the command API from the operator UI, hotkeys, clicker, or phone remote: Next/Previous crossing an item boundary, Next/Previous item, clicking another item or a slide in another item. Changes caused by **Actions or Cues** (including `GoToItem` and timer-expiry jumps) do **not** stop audio, so authors keep full control (`ShowEnded → StopAudio` remains available as an explicit Action). Slide moves within the same item never touch audio (DEC-013). Each command carries an `Origin` (Operator or Automation) for this purpose. The FRD records this as DEC-020. AUD-017 still applies when automation moves away from a playing song: audio continues, cues stop driving slides. The state also exposes "audio playing from item X" so the operator UI can show it on the originating item's header even after the operator has moved on.
 - **Accuracy note:** WaveOut and WASAPI buffers add latency, and `GetPosition` reports what's been written, not what's audible. For 50 ms accuracy (AUD-018) we use a modest buffer (about 50-100 ms), read the position from the output device, and tune a latency offset in the spike (§12).
 - **MP3 caveat:** `Mp3FileReader` seeks approximately on VBR files. For accurate trim and seek we expect to use `MediaFoundationReader` (Windows' own decoder, no extra dependency). The spike validates this. Audio is streamed, never decoded wholesale into RAM.
 
 ### 6.6 CCLI and mode
 
-`ServiceMode` is a field on the Service with no effect except on close (MODE-003). `CcliService.OnServiceClosing` implements CCLI-010..016: build the reportable list, show the summary through an `IUserPrompt` interface, and write `logs/ccli/{serviceId}.json` atomically, replacing any prior file for that Service (CCLI-013). The CSV export reads all log files in a date range and groups by CCLI number, counting distinct Services (CCLI-020).
+`ServiceMode` has no effect except on close (MODE-003). It lives in the **Service state file** `services/{id}.state.json` (LIB-013, D-10), together with check dismissals and the CCLI-016 answer. The presentation session and the close flow write that file directly, so they never collide with an open Service draft or trigger the LIB-006 overwrite prompt. The last write wins. `StartPresenting(service, mode)` writes the Mode (MODE-005).
+
+`CcliService.OnServiceClosing` implements CCLI-010..016: build the reportable list, show the summary through an `IUserPrompt` interface, and write `logs/ccli/{serviceId}.json` atomically, replacing any prior file for that Service (CCLI-013). Cancel skips logging but never blocks the close or exit. On startup, `last-session.json` (§9.1) tells whether a Live Service was left open by a crash. If so, and it has no log file, the close flow runs then (CCLI-018). The CSV export reads all log files in a date range and groups by CCLI number, counting distinct Services (CCLI-020).
 
 ### 6.7 Pre-service check (CHK)
 
-`CheckService` runs a list of `ICheckRule`s (one per CHK-001 bullet) over the Service plus resolved models and returns `Warning(severity, message, itemId?, slideId?)`. Rules are independent, so adding one is trivial. Dismissals are stored with the Service, keyed by rule and target. It never blocks (DEC-012).
+`CheckService` runs a list of `ICheckRule`s (one per CHK-001 bullet) over the Service plus resolved models and returns `Warning(severity, message, itemId?, slideId?)`. Rules are independent, so adding one is trivial. Dismissals are stored in the Service state file (LIB-013), keyed by rule and target. It never blocks (DEC-012). The zero-delay loop rule builds a small graph of "slide X, when displayed with no delay, goes to slide Y" and reports any cycle.
 
 ---
 
@@ -228,15 +252,18 @@ OutputWindow
      ├─ Layer 0: Background    (image or solid color, + future: video)
      ├─ Layer 1: Text          (static text, pre-rendered)
      ├─ Layer 2: Live text     (timer digits; small, updated per tick)
-     └─ Layer 3: Screen state  (Black / Logo / Clear overlay)
+     └─ Layer 3: Screen state  (Black / Logo overlay)
 ```
+
+Clear (LIVE-011) hides layers 1 and 2 and keeps layer 0, so the background must be available on its own (see §7.2). Logo with no logo set is the Black overlay (LIVE-012). When not presenting, the Output shows the Black overlay (LIVE-018).
 
 The same `SlideRenderer` builds this visual for the Output, the editor canvas, the operator Preview, and thumbnails, each at its own scale. This is the "one renderer" rule (SLD-026).
 
 ### 7.2 Why it's fast on weak hardware
 
-- **Pre-render, don't lay out on the hot path.** For the current, next, and previous slides, the renderer produces a frozen `RenderTargetBitmap` of Layers 0+1 at output resolution. Showing a slide is then a bitmap swap, which is the <100 ms path (PLT-006). Memory: 1440×900×4 B ≈ 5 MB per bitmap, so a 5-slide window is about 26 MB.
-- **Crossfade = opacity animation between two bitmap layers.** This is composited by WPF's render thread and is cheap on integrated graphics. No pixel-shader effects. If it isn't smooth in the spike, the setting is hidden and Cut is the only option (LIVE-031).
+- **Pre-render, don't lay out on the hot path.** For the current, next, and previous slides, the renderer produces frozen bitmaps at output resolution: layer 0 (background) and layer 1 (text) as **two separate bitmaps**, so Clear can show the background alone. Backgrounds are shared by many slides and de-duplicate in the image cache. Showing a slide is then a bitmap swap, which is the <100 ms path (PLT-006). Memory: 1440×900×4 B ≈ 5 MB per bitmap. The window is 3 slides × 2 layers, plus the outgoing frames during a crossfade, so about 40 MB worst case, less when backgrounds are shared. Targets of Action jumps (`GoToItem`) aren't predicted (LIVE-008) and render on demand.
+- **Crossfade = opacity animation between two slide groups.** Each group holds that slide's background, text, and live text (layer 2), so a Timer fades with its slide. This is composited by WPF's render thread and is cheap on integrated graphics. No pixel-shader effects. If it isn't smooth in the spike, the setting is hidden and Cut is the only option (LIVE-031).
+- **Thumbnails** for the operator list (LIVE-004) are small (about 160×100, 64 KB each) and kept in a byte-capped cache. A 200-slide Service is about 13 MB.
 - **No `DropShadowEffect` or `BlurEffect`.** They can fall back to software. Text outline and shadow (SLD-025, COULD) are drawn as geometry, and only if the spike shows they're affordable.
 - **Text via `FormattedText` or `GlyphRun`** into a `DrawingVisual`, not via a `FlowDocument` tree. Lighter, and deterministic.
 - Set `RenderOptions.BitmapScalingMode` and `TextOptions` appropriately for projector output (grayscale antialiasing reads better on projectors than ClearType).
@@ -329,6 +356,7 @@ last-session.json    last service + slide, for crash recovery (SAFE-005)
 - `System.Xml.Linq` parse on import, then a compact per-Bible index (book → chapter → verse offsets) cached locally. Bible text is loaded on demand when a passage is generated, not held resident.
 - Our own book alias table feeds the reference parser (`Jn`, `1 Cor`, `Ps 23`, `Rom 8:28,31-39`).
 - A Scripture Item generates ordinary Service-local slides (SCR-008) through the normal Template pipeline, with `reference` as a named Template Box. "Regenerate" rebuilds them after a warning.
+- The generated Show is in the built-in **Scripture Category** (CAT-010, D-11), whose ID is a fixed constant in `Domain` so both machines agree. Its default Template is the default Scripture Template, so Template resolution has no special case. `categories.json` gains the Scripture Category on first load if it's missing. Deleting it is refused.
 
 ---
 
@@ -362,13 +390,13 @@ The spike is a throwaway WPF app, run on the **actual church machine** *before* 
 | S1 | Borderless full-screen Output on the second display at 1440×900, correct pixel size under DPI scaling | Exact bounds, no taskbar, no flicker on show |
 | S2 | Crossfade between two image-backed slides rendered to bitmaps | Smooth at 300 ms, CPU stays low, no dropped frames visible. Else Cut-only |
 | S3 | Rich-text editing: mixed fonts, sizes, colors, bold/italic, paste, and `RichText ⇄ FlowDocument` round trip. Draw the same content in the `FormattedText` renderer | Editor and renderer agree visually. No corruption on round trip |
-| S4 | MP3 trim and seek accuracy, position readout, cue accuracy: compare `Mp3FileReader` vs `MediaFoundationReader`, WaveOut vs WASAPI | Cue fires within 50 ms of audible position. Seek to trim start is accurate on a VBR file |
+| S4 | MP3 trim and seek accuracy, position readout, cue accuracy: compare `Mp3FileReader` vs `MediaFoundationReader`, WaveOut vs WASAPI. Also: Cue latency while the UI thread pre-renders slides, and what happens when the default audio device changes mid-song (plug the projector's HDMI in and out) | Cue fires within 50 ms of audible position, with pre-rendering running. Seek to trim start is accurate on a VBR file. Device change doesn't crash |
 | S5 | One-second timer with fixed-cell digits over a background, running for 10+ minutes | No flicker, no neighbour shift, no drift vs wall clock |
-| S6 | Memory: 3 Songs, 5 Presentations, backgrounds, 5-bitmap prerender window | Working set ≤ 300 MB (PLT-005). Record idle and presenting |
+| S6 | Memory: 3 Songs, 5 Presentations, backgrounds, the §7.2 prerender window. Time to pre-render one slide on the UI thread | Working set ≤ 300 MB (PLT-005). Record idle and presenting. Record pre-render time (decides the render thread, §4.1) |
 | S7 | Startup time and self-contained ReadyToRun size, with and without Kestrel loaded | Acceptable startup. Record numbers |
-| S8 | .NET 10 on the church's Windows 10 build | Runs, and WPF uses sane rendering tier |
+| S8 | .NET 10 on the church's Windows 10 build. Record the exact Windows version and whether it still gets updates | Runs, and WPF uses sane rendering tier. The build is on Microsoft's .NET 10 supported-OS list |
 
-Results go into a short `Spike-Results.md`, and the architecture is revised where reality disagrees (especially S2, S3, S4).
+The spikes are built as **one program** with a tab per area and an on-screen checklist that records the figures to a file, so G0 needs one visit to the church. Results go into `docs/SPIKE-RESULTS.md`, and the architecture is revised where reality disagrees (especially S2, S3, S4).
 
 ---
 
@@ -409,6 +437,10 @@ All recommendations in the table below were accepted.
 | D-7 | Kestrel for the remote | Yes, lazy-loaded | `HttpListener` (lighter, but URL-ACL and firewall issues without admin rights) |
 | D-8 | `ServiceItem` as a sealed class hierarchy with a JSON discriminator | Yes | Single record with nullable fields (as in the FRD sketch) |
 | D-9 | .NET 10 LTS rather than 8 | Yes (see §2) | .NET 8 (end of support Nov 2026) |
+| D-10 | Mode, check dismissals, and the CCLI-016 answer in a separate Service state file (LIB-013) | Yes | Keep them in the Service file (conflicts with open drafts and with the other machine's edits) |
+| D-11 | Built-in Scripture Category with a fixed ID replaces the "default Scripture Template" Library setting (CAT-010) | Yes | Scripture Shows without a Category, plus a special case in Template resolution |
+| D-12 | Fixed event order on slide and item changes (ACT-005/006), owned by `PresentationSession` | Yes | Unordered events (audio and Action ordering bugs) |
+| D-13 | Operator screen controls toggle, Action screen commands set, plus `Normal` (ACT-026..028, ACT-033) | Yes | Actions toggle like the operator controls |
 
 ---
 
@@ -453,7 +485,7 @@ I lean towards (2) or (3) with the stop being explicit in the UI ("Audio stopped
 
 **Q-A6: FRD housekeeping.** §0 point 6 says open questions are in "Section 18", but they are in Section 23. Not blocking.
 
-Also unresolved from the FRD, and still blocking their features: Q-003, Q-004, Q-005, Q-006, Q-007, Q-009, and the product name Q-010.
+Still open in the FRD (v0.3): Q-005 (CCLI spreadsheet, needed by C6.3), Q-011 (remote slide text, C8.1) and Q-012 (canvas aspect change, settings chunk). Q-001, Q-002, Q-006 and Q-007 run on their defaults. Q-003, Q-004, Q-008, Q-009 and Q-010 are resolved.
 
 ---
 
@@ -466,6 +498,10 @@ Also unresolved from the FRD, and still blocking their features: Q-003, Q-004, Q
 | Cue accuracy (WaveOut latency, VBR MP3 seeking) | AS-03 fails | Spike S4. Use `MediaFoundationReader`, tune the latency offset. |
 | Memory over 300 MB | PLT-005 fails | Bounded bitmap and image caches, on-disk downscaled images, measure in S6 and AS-09. |
 | Drive sync bursts, partial files, or locks | Spurious reloads, failed saves | Debounced watcher, hash comparison, retrying atomic writes, ignore `.saving`. |
+| Slide pre-rendering stalls the UI thread | Late Cues (AUD-018), sluggish hotkeys | Measure in S4/S6. Dedicated STA render thread if needed (§4.1). |
+| Default audio device switches to the projector's HDMI | Song stops or plays through the projector | Handle device-change errors (§6.5), test in S4 and at G4. |
+| Church PC runs Windows 10, which no longer gets security updates, and .NET 10 may not support its build | App won't run, or an unpatched PC opens a LAN port for the remote | S8 checks the build against the .NET 10 supported-OS list. Raise a Windows 11 upgrade with the owner if it fails. |
+| Golden-image render tests differ across machines | Flaky tests | Render with software rendering and a fixed font set, compare with a small tolerance. |
 | Scope creep from comparable apps | Complexity | FRD §2 and §22 are treated as fences. |
 
 ---
@@ -473,6 +509,6 @@ Also unresolved from the FRD, and still blocking their features: Q-003, Q-004, Q
 ## 17. Suggested next steps
 
 1. ~~You review this document and answer §14 and §15.~~ Done.
-2. I create the solution skeleton (projects in §3, DI wiring, empty interfaces) and the spike app.
-3. You run the spike on the church machine and send me the numbers.
-4. We revise this document with the results, then start Phase 1.
+2. ~~I create the solution skeleton.~~ Done (C0.1). Headless Phase 1 is under way (C1.1 to C1.3 done).
+3. Build the combined spike program (C0.2 to C0.4). You run it on the church machine and send me the numbers (G0).
+4. We revise this document with the results, then start Phase 2.

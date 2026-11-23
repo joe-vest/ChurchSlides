@@ -1,8 +1,8 @@
 # Functional Requirements: Church Presentation App
 
-Version: 0.2 (draft)
+Version: 0.3 (draft)
 Date: 2026-11-23
-Changes from 0.1: see Section 26. Product name is ChurchSlides.
+Changes since 0.1: see Section 26. Product name is ChurchSlides.
 Status: Functional requirements only. UI layout, visual design, and detailed technical design are deliberately not covered here.
 
 ---
@@ -68,6 +68,7 @@ Target environment for reference: the church projector is 1440×900 (16:10). The
 | DEC-018 | Only one audio track plays at a time. | Simplicity. |
 | DEC-019 | The phone remote can't change Rehearse or Live mode. | Product owner requirement. |
 | DEC-020 | Audio stops when the **operator** changes to a different Service Item (Next/Previous crossing an item boundary, Next item, Previous item, or clicking another item or a slide in another item, from the operator UI, hotkeys, clicker, or phone remote). It does **not** stop when the change is caused by an Action or a Cue. | Jumping out of a song means the operator has abandoned it. Automation authors keep full control and can add `StopAudio` explicitly. Resolves Q-003. |
+| DEC-021 | Presenting starts only with one of two buttons: **Go Live** (presents in Live mode) or **Rehearse** (presents in Rehearse mode). Clicking a slide while not presenting only selects it. | Starting to present is a deliberate act, and choosing the mode at that moment means it is never forgotten. Resolves Q-009. |
 
 ---
 
@@ -85,13 +86,13 @@ Use these names exactly.
 | Text Box | `TextBox` | A positioned rich-text region on a Slide. It is either bound to a Template Box or detached. |
 | Template | `Template` | A reusable layout: a background, named Template Boxes, and default text formatting. |
 | Template Box | `TemplateBox` | A named, positioned text region inside a Template, with default formatting. |
-| Category | `Category` | A flat label. Each Show has exactly one. Categories drive default Templates and Placeholder filtering. |
+| Category | `Category` | A flat label. Each Show has exactly one. Categories drive default Templates and Placeholder filtering. One built-in Category, Scripture, always exists (CAT-010). |
 | Tag | `Tag` | Optional, many per Show. `[COULD]` |
 | Service | `Service` | One dated run order. It holds an ordered list of Service Items, Variables, Timers, service-level actions, and a mode (Rehearse or Live). |
 | Service Item | `ServiceItem` | One entry in a Service. It has one of four forms: Show Reference, Show Copy, Placeholder, or Scripture. |
 | Show Reference | `ServiceItemKind.ShowReference` | A Service Item pointing to a catalog Show. It may carry a list of skipped slides. |
 | Show Copy | `ServiceItemKind.ShowCopy` | A Service Item holding its own Service-local copy of a Show, created by forking a reference. |
-| Placeholder | `ServiceItemKind.Placeholder` | An unfilled slot in a Service, optionally restricted to a Category and/or Kind. It is filled by choosing a Show. |
+| Placeholder | `ServiceItemKind.Placeholder` | An unfilled slot in a Service, optionally restricted to a Category and/or Kind. It is filled by choosing a Show. The word means only this. |
 | Scripture Item | `ServiceItemKind.Scripture` | A Service Item that generates Service-local slides from a Bible passage. |
 | Service Template | `ServiceTemplate` | A blueprint for creating new Services: Service Items (including Placeholders), variable definitions, Timer definitions, and service-level actions. |
 | Variable | `Variable` | A named value defined on a Service, such as `preacher`. Slides reference it with a token. |
@@ -196,7 +197,7 @@ record AudioTrack(
 record Cue(Guid SlideId, TimeSpan Position); // Position = absolute file time
 
 record Service(
-  Guid Id, string Name, DateOnly Date, ServiceMode Mode,
+  Guid Id, string Name, DateOnly Date, ServiceMode Mode,   // Mode is saved in the Service state file (LIB-013)
   List<ServiceItem> Items, List<Variable> Variables, List<Timer> Timers,
   List<Action> Actions, Guid? CreatedFromServiceTemplateId);
 
@@ -242,8 +243,9 @@ record Action(Trigger Trigger, TimeSpan Delay, List<Command> Commands);
 | LIB-008 | MUST | Machine-local data (search index, image caches, drafts, window positions, output display choice, Library path, remote token) is stored outside the Library, in `%LOCALAPPDATA%\ChurchSlides\`. It is rebuildable or machine-specific, and MUST NOT be synced. |
 | LIB-009 | SHOULD | Detect files that look like sync-tool conflict copies (for example names containing `(1)`, `conflict`, or a duplicate `Id` in two files). List them in a "Library problems" panel. Don't load them silently as separate objects. |
 | LIB-010 | MUST | If the Library folder is unavailable at startup, show a clear message and let the user choose another folder. Don't crash. |
-| LIB-011 | SHOULD | A media file that is referenced but missing renders as a neutral placeholder (for example a solid dark background) and is flagged by the pre-service check. It must never crash or block the Output. |
+| LIB-011 | SHOULD | A media file that is referenced but missing renders as a neutral fallback (for example a solid dark background) and is flagged by the pre-service check. It must never crash or block the Output. |
 | LIB-012 | COULD | A "clean up unused media" tool lists media files no object references. |
+| LIB-013 | MUST | Facts about a Service that change outside its editor are saved in a separate **Service state file** (`services/{id}.state.json`), not in the Service file: the Mode (MODE-001), pre-service check dismissals (CHK-002), and the "don't ask again" answer of CCLI-016. Writing them never conflicts with an open Service draft (SAFE-001). The state file is small and the last write wins (no LIB-006 prompt). A missing state file means Rehearse mode, no dismissals, and not yet asked. |
 
 Suggested folder layout (non-normative):
 
@@ -253,6 +255,7 @@ Library/
   categories.json
   shows/{id}.json
   services/{id}.json
+  services/{id}.state.json (mode, check dismissals, CCLI-016 answer; LIB-013)
   templates/{id}.json
   service-templates/{id}.json
   bibles/{id}.xml          (original Zefania files)
@@ -276,6 +279,7 @@ Library/
 | CAT-007 | MUST | Shows can be created, duplicated (independent copy, DEC-005), renamed, recategorized, and deleted. Deleting a Show referenced by a Service warns and lists those Services. |
 | CAT-008 | COULD | Tags: many per Show. They are filtered by picking from a list of existing tags, not by typing. |
 | CAT-009 | COULD | Usage statistics per Song, such as last-used date and count over the last N months, derived from the Usage Log. |
+| CAT-010 | MUST | A built-in **Scripture** Category always exists. It has a fixed, well-known ID (the same on every machine, so two machines never create two of them). It can be renamed but not deleted. Its default Template (TPL-012) is the default Scripture Template (SCR-013). Slides generated by Scripture Items belong to it, and catalog Shows may use it too. |
 
 ---
 
@@ -354,7 +358,7 @@ Library/
 |---|---|---|
 | VAR-001 | MUST | Variables are defined on a Service, each with a name and a text value. Names are case-insensitive, unique within a Service, and limited to letters, digits, and underscores. |
 | VAR-002 | MUST | A slide refers to a Variable with a token such as `{{preacher}}`. The same token works in any Show, and it resolves against the Service currently being presented. |
-| VAR-003 | MUST | When a Show is viewed outside a Service (for example in the Catalog editor), tokens display as their names (for example "{{preacher}}") or a placeholder style. |
+| VAR-003 | MUST | When a Show is viewed outside a Service (for example in the Catalog editor), tokens display as their names (for example "{{preacher}}") in a marker style. |
 | VAR-004 | MUST | A Service Template defines Variable names with optional default values. New Services copy them. |
 | VAR-005 | MUST | A token whose Variable is undefined or empty renders as empty text on the Output, and the pre-service check flags it (CHK-001). |
 | VAR-006 | MUST | Formatting applied to a token range applies to its resolved value. |
@@ -373,7 +377,7 @@ Library/
 | SVC-002 | MUST | Service Items can be added (from the Catalog via search, as a Placeholder, or as a Scripture Item), removed, and reordered. |
 | SVC-003 | MUST | Services can be created blank, created from a Service Template, duplicated, renamed, and deleted. |
 | SVC-004 | MUST | The Service list sorts by date, newest first. |
-| SVC-005 | SHOULD | A "Save as Service Template" action turns a Service into a Service Template. |
+| SVC-005 | SHOULD | A "Save as Service Template" action turns a Service into a Service Template. Show Copies become Show References to their catalog Show. Filled Placeholders that remember their label and filter (SVC-033) become Placeholders again. Scripture Items become Scripture Item stubs (SVC-030). |
 
 ### 10.2 References, copies, and skipped slides
 
@@ -384,7 +388,7 @@ Library/
 | SVC-022 | MUST (ASSUMPTION for prompt wording) | When the user edits slide content of a Show Reference from inside a Service: for **Presentations**, the item is automatically forked into a Show Copy and the edit applies only to this Service. For **Songs**, prompt "Edit the catalog song (changes every Service)" or "Make a copy for this Service only", with catalog edit as the default. |
 | SVC-023 | MUST | A forked item is clearly marked as "Modified for this Service" in the Service editor. |
 | SVC-024 | SHOULD | A Show Copy offers "Revert to catalog version", which discards the copy and restores the reference. |
-| SVC-025 | MUST | Skipping slides is disabled for a Show that has an Audio Track with Cues. The UI explains why (audio cues require the full sequence). The same rule applies to catalog Skipped marks (SHOW-008). |
+| SVC-025 | MUST | Skipping slides is disabled for a Show that has an Audio Track with Cues. The UI explains why (audio cues require the full sequence). The same rule applies to catalog Skipped marks (SHOW-008). If Cues are added after a Service already skips slides of that Show, the Service's skip list is ignored during presentation (all slides are displayable). |
 | SVC-026 | MUST | If a referenced Show is deleted from the Catalog, the Service Item shows as "Missing show" and the pre-service check flags it. The Service still opens. |
 | SVC-027 | MUST | When a catalog Show is added to a Service (directly, or by filling a Placeholder), the Show's catalog Skipped marks (SHOW-008) are **copied** into the Service Item's skip list. From then on the Service Item is independent: later changes to the catalog marks don't affect it. Example: verses 5 and 6 are Skipped in the catalog. A new Service starts with 5 and 6 skipped. In that Service the user un-skips them and skips 3 and 4. The catalog is untouched. |
 | SVC-028 | SHOULD | The Service editor offers "Reset to catalog defaults" on a Show Reference, which replaces its skip list with the current catalog marks. |
@@ -393,7 +397,7 @@ Library/
 
 | ID | Priority | Requirement |
 |---|---|---|
-| SVC-030 | MUST | A Service Template contains an ordered list of items (Show References, Placeholders, Scripture Item stubs), Variable definitions with defaults, Timer definitions, and service-level Actions. |
+| SVC-030 | MUST | A Service Template contains an ordered list of items (Show References, Placeholders, Scripture Item stubs), Variable definitions with defaults, Timer definitions, and service-level Actions. A Scripture Item stub keeps the Bible and the settings of SCR-007 with an empty reference, to be filled in each week. |
 | SVC-031 | MUST | A Placeholder has a label (for example "Opening song") and an optional Category filter and/or Kind filter. Filling it opens a search list restricted to matching Shows. The chosen Show replaces the Placeholder as a Show Reference in the same position. |
 | SVC-032 | MUST | A Placeholder keyed to a Category supports the rotating-liturgy case: a Category such as "Communion liturgy" holds several Shows, and each week the user picks one. |
 | SVC-033 | SHOULD | A filled Placeholder remembers its original label and filter, so the item can be cleared back to a Placeholder and re-filled. |
@@ -418,14 +422,15 @@ Library/
 | AUD-010 | MUST | Cue editor, seek and test: click anywhere on the timeline to play from that point. The slide preview follows the Cues. Typical use is jumping a few seconds before a Cue to check it. |
 | AUD-011 | MUST | Cue editor: the current playback position shows with at least 0.1 s precision. Cue positions can be nudged by fixed increments (for example ±0.1 s, ±0.5 s) and typed in directly. |
 | AUD-012 | COULD | Waveform display on the timeline. |
-| AUD-013 | MUST | Live audio controls in the operator UI: Restart (play from Trim Start and display the first slide), and Stop. No live seeking is required. The operator UI always shows which Show's audio is playing, with a Stop control, even when the current item is a different one. |
+| AUD-013 | MUST | Live audio controls in the operator UI: Restart (play from Trim Start and display the first slide of the item the audio belongs to, going back to that item if the operator has moved on), and Stop. No live seeking is required. The operator UI always shows which Show's audio is playing, with a Stop control, even when the current item is a different one. |
 | AUD-014 | MUST | Manual navigation between slides of the same Show never affects audio playback (DEC-013). An operator-initiated change to a different Service Item stops audio (DEC-020). Each command carries an origin (Operator or Automation) so this can be decided in one place. |
 | AUD-015 | MUST | Only one Audio Track plays at a time. Starting audio stops any other playing audio. |
-| AUD-016 | MUST | A "Start audio" command for audio that is already playing does nothing (doesn't restart). This handles navigating back onto a slide whose display action starts audio. |
+| AUD-016 | MUST | A "Start audio" command for audio that is already playing does nothing (doesn't restart). "Already playing" means the same Show's Audio Track is playing. Another Show that uses the same file (AUD-019) starts it again from its own Trim Start. This handles navigating back onto a slide whose display action starts audio. |
 | AUD-017 | MUST | Cue-driven slide changes happen only while the Show owning the playing audio is the current Service Item. If an Action or Cue moves to another item, the audio keeps playing but its Cues don't change the slide (an operator-initiated move stops audio instead, DEC-020). |
 | AUD-018 | MUST | Audio position accuracy: a Cue fires within 50 ms of its position during normal playback. |
 | AUD-019 | SHOULD | Audio Tracks are referenced by path so the same file can be used by more than one Show. |
 | AUD-020 | MUST | The audio engine is behind an interface, so a future video player can share the same clock and cue model (FUT-002). |
+| AUD-021 | MUST | `StartAudio` starts audio only while the current slide is the **first displayable slide** of the Show that owns the Audio Track. Otherwise it does nothing. So entering a song at its last slide (Previous crossing back, LIVE-005) or by clicking a slide in the middle (LIVE-004) doesn't start the audio. Restart (AUD-013) displays the first slide, so it always plays. |
 
 ---
 
@@ -433,7 +438,7 @@ Library/
 
 | ID | Priority | Requirement |
 |---|---|---|
-| TMR-001 | MUST | A Timer is a named object defined on a Service (or a Service Template, from which it is copied). |
+| TMR-001 | MUST | A Timer is a named object defined on a Service (or a Service Template, from which it is copied). Timer names follow the Variable rules (VAR-001): case-insensitive, unique within a Service, letters, digits, and underscores only. |
 | TMR-002 | MUST | Timer types: **Countdown to clock time** (target time of day, such as 10:00) and **Countdown duration** (for example 5:00). |
 | TMR-003 | MUST | Timer states: Stopped, Running, Expired. |
 | TMR-004 | MUST | Once started, a Timer keeps running regardless of which slide is displayed or whether it's visible. Several slides showing the same Timer show the same value. |
@@ -444,11 +449,12 @@ Library/
 | TMR-009 | MUST | A slide shows a Timer with a token such as `{{timer:ServiceStart}}` inside a Text Box. The default display format is `h:mm:ss`. The token stands alone in its Text Box. It isn't embedded in running text. |
 | TMR-010 | MUST | Timer display is smooth: digits use fixed-width (tabular) figures, or the timer run is laid out at a fixed width, so the text around it doesn't shift. Only the timer's text is updated each tick. The slide isn't re-rendered, and transitions don't apply to timer ticks. |
 | TMR-011 | MUST | Timers tick on whole seconds, tied to the system clock (not an accumulating interval timer), so they don't drift. |
-| TMR-012 | MUST | Commands: Start Timer (name) and Stop Timer (name). Stop returns the Timer to Stopped and resets it. Starting a Running Timer does nothing. |
+| TMR-012 | MUST | Commands: Start Timer (name) and Stop Timer (name). Stop returns the Timer to Stopped and resets it. Starting a Running Timer does nothing. Starting an Expired Timer restarts it, the same as Stop followed by Start (TMR-008 still applies to clock-time Timers). |
 | TMR-013 | MUST | `AutoStartOnDisplay` per Timer (default on): displaying a slide that shows a Stopped Timer starts it. |
 | TMR-014 | MUST | A Stopped Timer shows its full duration (duration type) or the live remaining time to target (clock type). |
 | TMR-015 | COULD | Display format options (for example `m:ss`, `mm:ss`, hide hours when zero). |
 | TMR-016 | MUST | Timers behave the same in Rehearse and Live modes. |
+| TMR-017 | MUST | Timer state is not saved. Stopping presentation resets every Timer to Stopped. Reopening a Service, or restoring after a crash (SAFE-005), starts with all Timers Stopped. Clock-time Timers show the correct remaining time anyway (TMR-014). |
 
 Reference scenario (must work end to end): a Service-start countdown to 10:00. Announcement slides loop with auto-advance, all showing `{{timer:ServiceStart}}`. Text turns red in the last 60 seconds. At expiry, the presentation jumps to the first Service Item after the announcements.
 
@@ -461,9 +467,11 @@ Reference scenario (must work end to end): a Service-start countdown to 10:00. A
 | ID | Priority | Requirement |
 |---|---|---|
 | ACT-001 | MUST | An Action is a Trigger, an optional Delay (default 0), and an ordered list of one or more Commands, run in order. |
-| ACT-002 | MUST | Actions can be attached to: a Slide, a Show, a Service Item (owned by the Service, not by the catalog Show), a Service, and a Service Template (copied to new Services, with Service Item Actions remapped to the new item IDs). |
+| ACT-002 | MUST | Actions can be attached to: a Slide, a Show, a Service Item (owned by the Service, not by the catalog Show), a Service, and a Service Template (copied to new Services). When a Service is created from a Service Template or duplicated, every Action that names a Service Item (at Service, Service Item, or any other level) is remapped to the new item IDs. |
 | ACT-003 | MUST | Actions run identically in Rehearse and Live modes. |
-| ACT-004 | MUST | A delayed Action is cancelled if, before the delay ends, the slide changes (for slide-scoped triggers) or the item changes (for show-scoped triggers). |
+| ACT-004 | MUST | A delayed Action is cancelled if, before the delay ends, the slide changes (for slide-scoped triggers: `SlideDisplayed`, `SlideEnded`, and `TimerExpired` on a Slide) or the item changes (for show-scoped triggers: `ShowStarted`, `ShowEnded`). Delayed Service-level Actions are not cancelled by navigation. Stopping presentation cancels every pending Action. |
+| ACT-005 | MUST | Order of events when the current slide changes. When the item changes too, the steps run in this order: (1) if the operator caused an item change, stop audio (DEC-020); (2) `SlideEnded` for the old slide; (3) `ShowEnded` for the old item; (4) the new slide is displayed; (5) `ShowStarted` for the new item; (6) `SlideDisplayed` for the new slide. Steps 3 and 5 are left out when the item doesn't change. Each step finishes its zero-delay Actions before the next step starts. |
+| ACT-006 | MUST | When one event fires Actions at several levels, they run in the order Service, Service Item, Show, Slide. Within one level, they run in the order they are listed. |
 
 ### 13.2 Triggers
 
@@ -472,10 +480,10 @@ Reference scenario (must work end to end): a Service-start countdown to 10:00. A
 | ACT-010 | MUST | `ServiceStarted` | Presentation of a Service begins (the user starts presenting the Service). | Service |
 | ACT-011 | MUST | `ShowStarted` | The current item changes to this Show (entered from any direction). | Show, Service Item |
 | ACT-012 | MUST | `ShowEnded` | The current item changes away from this Show. | Show, Service Item |
-| ACT-013 | MUST | `SlideDisplayed` | This slide becomes the current slide (by any means: manual, cue, or action). | Slide |
-| ACT-014 | MUST | `SlideEnded` | This slide stops being the current slide. | Slide |
+| ACT-013 | MUST | `SlideDisplayed` | This slide becomes the current slide (by any means: manual, cue, or action). Clicking or going to the slide that is already current doesn't fire it again. On a Service Item it fires for every slide of that item. | Slide, Service Item |
+| ACT-014 | MUST | `SlideEnded` | This slide stops being the current slide. On a Service Item it fires for every slide of that item. | Slide, Service Item |
 | ACT-015 | MUST | `TimerExpired(name)` | The named Timer expires (TMR-007). On a Slide, it fires only if that slide is current. On a Service, it fires regardless of the current slide. | Slide, Service |
-| ACT-016 | SHOULD | `AudioEnded` | The Show's Audio Track reaches Trim End or the end of the file (not when stopped by command). | Show |
+| ACT-016 | SHOULD | `AudioEnded` | The Show's Audio Track reaches Trim End or the end of the file. It doesn't fire when audio is stopped for any other reason (Stop, `StopAudio`, another track starting, or DEC-020). | Show |
 
 ### 13.3 Commands
 
@@ -487,13 +495,14 @@ Reference scenario (must work end to end): a Service-start countdown to 10:00. A
 | ACT-023 | MUST | `GoToItem(itemId)` | Display the first slide of a specific Service Item. Used for loops and timer-expiry jumps. |
 | ACT-024 | MUST | `StartAudio` | Start the current Show's Audio Track from Trim Start (AUD-015, AUD-016). |
 | ACT-025 | MUST | `StopAudio` | Stop any playing audio. |
-| ACT-026 | MUST | `Clear` | Same as the operator Clear control (LIVE-011). |
-| ACT-027 | MUST | `Black` | Same as the operator Black control. |
-| ACT-028 | MUST | `Logo` | Same as the operator Logo control. |
+| ACT-026 | MUST | `Clear` | Sets the Output to Clear (LIVE-011). Unlike the operator control it isn't a toggle: if Clear is already on, nothing changes. |
+| ACT-027 | MUST | `Black` | Sets the Output to Black (LIVE-010). Not a toggle. |
+| ACT-028 | MUST | `Logo` | Sets the Output to Logo (LIVE-012). Not a toggle. |
 | ACT-029 | MUST | `StartTimer(name)` | See TMR-012. |
 | ACT-030 | MUST | `StopTimer(name)` | See TMR-012. |
 | ACT-031 | MUST | `NextItem` | Display the first displayable slide of the next Service Item. |
 | ACT-032 | MUST | `PreviousItem` | Display the first displayable slide of the previous Service Item. |
+| ACT-033 | MUST | `Normal` | Turns off Black, Clear, or Logo, so the current slide shows. Does nothing if none is on. |
 
 Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. The slide editor SHOULD offer a one-click "Auto-advance after N seconds" shortcut that creates this Action.
 
@@ -501,7 +510,7 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 
 | ID | Priority | Requirement |
 |---|---|---|
-| ACT-040 | MUST | Loop guard: if Actions cause more than 20 slide changes in under 1 second with no user input, stop processing Actions, keep the current slide, and show a non-blocking warning. Normal delayed loops (for example auto-advance every 8 seconds) are unaffected. |
+| ACT-040 | MUST | Loop guard: if Actions cause more than 20 slide changes in under 1 second with no user input, pause Actions for the current Service Item, keep the current slide, and show a non-blocking warning ("Automation paused for this item: Actions changed slides too quickly"). Actions work again as soon as the current item changes to a different item. Normal delayed loops (for example auto-advance every 8 seconds) are unaffected. |
 | ACT-041 | MUST | References to a missing slide, item, or Timer do nothing and are flagged by the pre-service check. |
 | ACT-042 | MUST (ASSUMPTION) | When an Audio Track is attached to a Show, the editor offers to add `ShowStarted → StartAudio` by default. The user can remove it. |
 | ACT-043 | SHOULD | The operator UI shows a small indicator when a delayed Action is pending (for example "Auto-advance in 5 s"). |
@@ -515,10 +524,11 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 
 | ID | Priority | Requirement |
 |---|---|---|
-| MODE-001 | MUST | Each Service has a Mode: Rehearse (default) or Live. It is saved with the Service. |
+| MODE-001 | MUST | Each Service has a Mode: Rehearse (default) or Live. It is saved in the Service state file (LIB-013). |
 | MODE-002 | MUST | Mode can be switched at any time, including mid-presentation. Switching doesn't change the Output, the current slide, Timers, audio, or any state. |
 | MODE-003 | MUST | The only effect of Mode is CCLI logging when the Service is closed (CCLI-010). |
-| MODE-004 | MUST | The current Mode is shown prominently in the operator UI, and read-only on the phone remote. UI details are deferred. |
+| MODE-004 | MUST | The current Mode is shown prominently in the operator UI, and read-only on the phone remote. |
+| MODE-005 | MUST | Presenting starts only with **Go Live** or **Rehearse** (DEC-021). Each sets the Service's Mode to match and starts presenting. While presenting, the operator can still switch Mode (MODE-002). |
 
 ### 14.2 Metadata and display
 
@@ -534,14 +544,15 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 
 | ID | Priority | Requirement |
 |---|---|---|
-| CCLI-010 | MUST | When a Service whose Mode is Live is closed (by closing the Service, opening another Service, or exiting the app), show a short summary listing the reportable Shows in it and the Service date, with one **OK** button (and Cancel, which skips logging this time). On OK, write the log. |
+| CCLI-010 | MUST | When a Service whose Mode is Live is closed (by closing the Service, opening another Service, or exiting the app), show a short summary listing the reportable Shows in it and the Service date, with one **OK** button (and Cancel, which skips logging this time). On OK, write the log. Cancel doesn't stop the close or the exit. |
 | CCLI-011 | MUST | Every reportable Show in the Service is logged, whether displayed or not (DEC-011). Unfilled Placeholders are ignored. Show Copies are logged using their own metadata. |
 | CCLI-012 | MUST | The log date is the Service's date, not the date of closing. |
 | CCLI-013 | MUST | Each Service writes its own log file (`logs/ccli/{serviceId}.json`). Logging a Service again **replaces** its file, so reopening and closing doesn't double-count, and song swaps update the log. |
 | CCLI-014 | MUST | Log entries store a snapshot: service ID, service name, service date, show ID, title, authors, copyright, CCLI song number, and logged-at timestamp. Later Show edits or deletions don't alter past entries. |
 | CCLI-015 | MUST | Deleting a Service doesn't delete its log file. |
-| CCLI-016 | MUST | Safety net: when a Service in Rehearse mode is closed, its date is today or earlier, it has reportable Shows, and it has no log file, ask once: "Log this as a live service?" If the user answers Yes, set the Mode to Live and run CCLI-010. If No, don't ask again for this Service. |
+| CCLI-016 | MUST | Safety net: when a Service in Rehearse mode is closed, its date is today or earlier, it has reportable Shows, and it has no log file, ask once: "Log this as a live service?" If the user answers Yes, set the Mode to Live and run CCLI-010. If No, don't ask again for this Service (the answer is kept in the Service state file, LIB-013). |
 | CCLI-017 | SHOULD | A Usage Log viewer lists entries by date. Entries can be deleted, and a Service's log can be regenerated from the Service if it still exists. |
+| CCLI-018 | MUST | Crash safety net: if the app ended without closing a Live Service (a crash or power loss, known from the machine's last-session record, SAFE-005), the next startup runs CCLI-010 for that Service, if it still exists and has no log file. |
 
 ### 14.4 Reporting and reminders
 
@@ -564,17 +575,18 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 | LIVE-001 | MUST | The Output is a borderless full-screen window on a display chosen in local settings. The choice is remembered per machine. |
 | LIVE-002 | MUST | If the chosen display isn't connected, fall back to a resizable window on the primary display and show a notice. |
 | LIVE-003 | MUST | The operator UI shows a Preview of the **current** slide (exactly as on the Output, including Black/Logo/Clear state) and the **next** slide. |
-| LIVE-004 | MUST | The operator UI shows the entire Service as one scrollable list of items and their slides (labels and thumbnails or text), with the current slide highlighted. Clicking any slide displays it immediately. |
+| LIVE-004 | MUST | The operator UI shows the entire Service as one scrollable list of items and their slides (labels and thumbnails or text), with the current slide highlighted. While presenting, clicking any slide displays it immediately. While not presenting, clicking a slide only selects it (DEC-021). |
 
 ### 15.2 Navigation flow
 
 | ID | Priority | Requirement |
 |---|---|---|
 | LIVE-005 | MUST | The Service plays as one continuous sequence. **Next on the last slide of an item goes to the first slide of the next item. Previous on the first slide of an item goes to the last slide of the previous item.** No extra clicks. This is a key requirement (FreeShow pain point). |
-| LIVE-006 | MUST | Skipped slides (SVC-021), unfilled Placeholders, and missing Shows are passed over during navigation. |
+| LIVE-006 | MUST | Skipped slides (SVC-021), unfilled Placeholders, and missing Shows are passed over during navigation. So is an item with no displayable slide (all its slides are skipped, or its Show has none). Clicking the header of such an item does nothing. |
 | LIVE-007 | MUST | At the last slide of the Service, Next does nothing (no wrap-around). Loops happen only through `GoToItem` / `GoToSlide` Actions. |
 | LIVE-008 | MUST | The "next slide" shown in the Preview and on the remote follows the same rules (crosses items, honors skips). It does **not** predict Action-driven jumps. |
-| LIVE-009 | MUST | Starting presentation fires `ServiceStarted`, then displays the first slide of the first item (or a slide the user clicks). |
+| LIVE-009 | MUST | Presentation starts only with Go Live or Rehearse (MODE-005). Starting fires `ServiceStarted`, then displays the selected slide, or the first displayable slide of the Service if none is selected. |
+| LIVE-018 | MUST | While not presenting (before Go Live or Rehearse, and after Stop presenting), the Output window stays open and shows black. |
 | LIVE-016 | MUST | Item-level navigation: **Next item** and **Previous item** go to the first displayable slide of the adjacent item (skipping unfilled Placeholders and missing Shows). Clicking an item header does the same for that item. Items and slides remain two visible levels in the operator UI (LIVE-004). The continuous Next/Previous of LIVE-005 is a convenience for moving through slides, not a flattening of the item level. The current position is always an item plus a slide. |
 | LIVE-017 | MUST | Skipped slides appear greyed with a **SKIPPED** badge in the operator UI. Clicking a Skipped slide still displays it (LIVE-004). Next and Previous from it move to the nearest non-skipped slide (LIVE-006). |
 
@@ -583,10 +595,10 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 | ID | Priority | Requirement |
 |---|---|---|
 | LIVE-010 | MUST | **Black**: the Output shows solid black. |
-| LIVE-011 | MUST | **Clear**: the Output hides all Text Boxes and keeps the current background. |
-| LIVE-012 | MUST | **Logo**: the Output shows the Library's logo image (a Library setting) on black. |
+| LIVE-011 | MUST | **Clear**: the Output hides all text, including Timers and the copyright box, and keeps the current background. |
+| LIVE-012 | MUST | **Logo**: the Output shows the Library's logo image (a Library setting) on black. If no logo is set, it shows black. |
 | LIVE-013 | MUST | Black, Clear, and Logo are toggles and are mutually exclusive (turning one on turns the others off). The operator UI shows which is active. |
-| LIVE-014 | MUST (ASSUMPTION) | Navigating while Black, Clear, or Logo is active updates the current slide but keeps the screen state, until the operator toggles it off. See Q-004. |
+| LIVE-014 | MUST | Navigating while Black, Clear, or Logo is active updates the current slide but keeps the screen state, until the operator toggles it off (or an Action runs `Normal`, ACT-033). Resolves Q-004. |
 | LIVE-015 | MUST NOT | No Freeze function. |
 
 ### 15.4 Keyboard and clickers
@@ -611,7 +623,8 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 
 | ID | Priority | Requirement |
 |---|---|---|
-| LIVE-040 | SHOULD | Edits saved during presentation (for example fixing a typo) appear on the Output the next time that slide is displayed. If the edited slide is current, it refreshes after the save. |
+| LIVE-040 | SHOULD | Edits saved during presentation (for example fixing a typo) appear on the Output the next time that slide is displayed. If the edited slide is current, it refreshes after the save. The refresh doesn't fire `SlideDisplayed`. |
+| LIVE-041 | MUST | If the current slide or item is removed while presenting, the Output keeps showing what it shows. Next goes to the slide that followed the removed one, and Previous to the one that preceded it. |
 
 ---
 
@@ -643,12 +656,12 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 | SCR-005 | MUST | A parsed index per Bible is cached locally (LIB-008) for fast lookup, and rebuilt if missing or stale. |
 | SCR-006 | MUST | Reference parser: accepts common forms such as `John 3:16`, `Jn 3:16-18`, `John 3:16-4:2`, `Ps 23`, `1 Cor 13:4-7`, and comma-separated parts (`Rom 8:28,31-39`). The app supplies its own list of book abbreviations, since `bsname` is optional. Invalid references give a clear error. |
 | SCR-007 | MUST | A Scripture Item stores: Bible, reference, verses per slide, show verse numbers (on/off), show reference line (on/off), and an optional Template. |
-| SCR-008 | MUST | During Service prep, a Scripture Item **generates ordinary slides**, local to the Service, using the chosen or default Scripture Template. There is no live Scripture lookup. |
+| SCR-008 | MUST | During Service prep, a Scripture Item **generates ordinary slides**, local to the Service, using the chosen or default Scripture Template. The generated Show is in the Scripture Category (CAT-010) and uses the Item's chosen Template as its default Template, so normal Template resolution (TPL-010) applies. There is no live Scripture lookup. |
 | SCR-009 | MUST | Verse numbers, when enabled, render inline (for example as superscript or a smaller run) from `vnumber`. |
 | SCR-010 | MUST | The reference line, when enabled, renders in a Template Box named for it (for example `reference`). It shows the verses on that slide plus the translation abbreviation, such as `John 3:16–17 (ESV)`. ASSUMPTION: per-slide range rather than the whole passage. |
 | SCR-011 | MUST | Generated slides can be edited like any slide (for example to rebalance a long verse). |
 | SCR-012 | MUST | "Regenerate" rebuilds the slides from the stored reference and settings, with a warning that manual edits will be lost. |
-| SCR-013 | MUST | A Library setting chooses the default Scripture Template. |
+| SCR-013 | MUST | The default Scripture Template is the default Template of the Scripture Category (CAT-010). There is no separate Library setting for it. |
 | SCR-014 | COULD | Split by maximum characters per slide, in addition to verses per slide. |
 | SCR-015 | COULD | Show the same passage in two translations. |
 | SCR-016 | MUST NOT | No copyright notice is required on Scripture slides. |
@@ -659,7 +672,7 @@ Auto-advance is expressed as `SlideDisplayed` + Delay N seconds + `NextSlide`. T
 
 | ID | Priority | Requirement |
 |---|---|---|
-| CHK-001 | MUST | A "Check Service" function lists warnings for the open Service: unfilled Placeholders; missing Shows; Variables referenced but empty or undefined; missing image or audio files; reportable Songs missing a copyright notice or authors; Songs with no CCLI number that aren't marked public domain; text overflow (SLD-028); Template box mismatches (TPL-027); Actions referring to missing slides, items, or Timers (ACT-041); Audio Tracks with Cues pointing to deleted slides. |
+| CHK-001 | MUST | A "Check Service" function lists warnings for the open Service: unfilled Placeholders; missing Shows; Variables referenced but empty or undefined; missing image or audio files; reportable Songs missing a copyright notice or authors; Songs with no CCLI number that aren't marked public domain; text overflow (SLD-028); Template box mismatches (TPL-027); Actions referring to missing slides, items, or Timers (ACT-041); Audio Tracks with Cues pointing to deleted slides; Timer tokens naming an undefined Timer; Scripture Items whose Bible is missing or whose reference is empty; Actions with no delay that change slides in a cycle (which would trip the loop guard, ACT-040); Library problems (LIB-009); the chosen output display not being connected (LIVE-002). |
 | CHK-002 | MUST | The check is advisory only (DEC-012). It never blocks anything. Each warning can be dismissed for this Service. |
 | CHK-003 | SHOULD | Clicking a warning opens the item or slide involved. |
 | CHK-004 | SHOULD | The check runs automatically when the user starts presenting, and shows a dismissible summary if there are warnings. |
@@ -737,13 +750,15 @@ Ask the product owner before implementing these.
 | Q-001 | Text Box mismatch rule (TPL-027): is "render in the first box and flag it" acceptable? | Implement as written. |
 | Q-002 | Song edit from a Service (SVC-022): is "prompt, defaulting to catalog edit" right, or should Song edits always be global? | Prompt. |
 | Q-003 | RESOLVED by DEC-020: operator-initiated item changes stop audio. Actions and Cues don't. No default `ShowEnded → StopAudio`. | n/a |
-| Q-004 | While Black, Clear, or Logo is active, should Next/Previous automatically turn it off (FreeShow-like), or keep it until toggled (current default)? | Keep until toggled. |
+| Q-004 | RESOLVED: Black, Clear, and Logo stay on through navigation until toggled off (LIVE-014). | n/a |
 | Q-005 | Obtain CCLI's current manual-reporting spreadsheet template and confirm the CSV columns (CCLI-021). Confirm whether the church's license has a separate "true-up" obligation. | Columns as in CCLI-020. |
 | Q-006 | Scripture reference line: per-slide verse range (default) or the whole passage on every slide? | Per-slide range. |
 | Q-007 | Default Copyright Placement for Songs: first or last slide? | First slide. |
-| Q-008 | Should Presentations ever be CCLI-reportable (for example a slide deck containing song lyrics)? | Only if marked with a CCLI number. Kind doesn't matter. |
-| Q-009 | UI for Rehearse/Live mode switching and indication (MODE-004). | Deferred. |
+| Q-008 | RESOLVED by CCLI-002: any Show with a CCLI number that isn't public domain is reportable. Kind doesn't matter. | n/a |
+| Q-009 | RESOLVED by DEC-021 and MODE-005: Go Live and Rehearse buttons start presenting and set the Mode. The rest of the mode indicator's look is UI design. | n/a |
 | Q-010 | RESOLVED: the product name is ChurchSlides. | n/a |
+| Q-011 | Phone remote slide text (REM-006): show Variables and metadata tokens resolved? And Timer tokens as the live value, or as the Timer's name? | Resolved values; Timers as their name. Ask before C8.1. |
+| Q-012 | Changing the canvas aspect ratio (SLD-004): geometry is stored as fractions, so boxes already stretch with the canvas. What should "rescale" do: nothing beyond the warning, or keep boxes' shapes by adjusting their fractions? | Warning only. Ask before the settings chunk. |
 
 ---
 
@@ -799,6 +814,18 @@ End-to-end scenarios the finished app must pass. Use them as integration tests.
 - TMR-009: a timer token stands alone in its Text Box.
 - Section 0 point 6 now points to Section 23.
 
-**0.3 (in progress, 2026-11-23)**
-- Skipping: catalog Skipped marks as a per-Service default (SHOW-008, SVC-027, SVC-028), clarified SVC-021 and SVC-025, and LIVE-017 (skipped slides display when clicked). - C1.2a: Text Box keeps its Template Box name when detached (TPL-023, section 4 sketch). TPL-014 (resolution never fails, built-in fallback Template, case-insensitive box names). CCLI-004 clarified: first/last displayed slide, no punctuation clean-up. Slide gets `SkippedByDefault` in the section 4 sketch.
+**0.3 (2026-11-23)**
+- Skipping: catalog Skipped marks as a per-Service default (SHOW-008, SVC-027, SVC-028), clarified SVC-021 and SVC-025, and LIVE-017 (skipped slides display when clicked).
+- C1.2a: Text Box keeps its Template Box name when detached (TPL-023, section 4 sketch). TPL-014 (resolution never fails, built-in fallback Template, case-insensitive box names). CCLI-004 clarified: first/last displayed slide, no punctuation clean-up. Slide gets `SkippedByDefault` in the section 4 sketch.
 - C1.2b: a Show Copy keeps the item's skip list and remembered Placeholder. Forking keeps the Service Item ID and every Slide and Text Box ID, and gives the local Show a new Show ID. Duplicating a Service starts it in Rehearse mode. A catalog Skipped mark is ignored for Shows with audio cues.
+- Document review (owner decisions of 2026-11-23):
+  - Starting to present: DEC-021, MODE-005, LIVE-009 (Go Live / Rehearse buttons set the Mode; clicking a slide when not presenting only selects it). LIVE-018: Output is black when not presenting. Resolves Q-009.
+  - Navigation: Q-004 resolved (LIVE-014). LIVE-006: items with no displayable slide are passed over. LIVE-041: current slide or item removed mid-presentation. LIVE-011: Clear hides all text. LIVE-012: no logo shows black.
+  - Actions: ACT-005 order of events on a slide or item change, ACT-006 order across levels. ACT-013/014: `SlideDisplayed` and `SlideEnded` allowed on a Service Item, and re-clicking the current slide doesn't fire `SlideDisplayed`. ACT-026..028 set the screen state (not toggles), new ACT-033 `Normal`. ACT-004: cancellation of Service-level delays and on stop. ACT-016 clarified. ACT-040: the loop guard pauses Actions for the current item only. ACT-002: all item references remapped.
+  - Audio: AUD-021 (`StartAudio` only at the Show's first displayable slide), AUD-013 Restart from another item, AUD-016 "already playing" means the same Show. SVC-025: a Service's skip list is ignored once the Show has Cues.
+  - Timers: TMR-001 naming rules, TMR-012 starting an Expired Timer restarts it, TMR-017 Timer state isn't saved.
+  - Storage: LIB-013 Service state file (Mode, check dismissals, CCLI-016 answer).
+  - Scripture: CAT-010 built-in Scripture Category, which replaces the Library setting in SCR-013 (SCR-008 updated).
+  - Services: SVC-005 and SVC-030 define Save as Service Template and Scripture Item stubs.
+  - CCLI: CCLI-010 Cancel doesn't stop the close, CCLI-018 crash safety net. Q-008 resolved by CCLI-002.
+  - CHK-001: more checks. "Placeholder" now means only the Service Item kind (VAR-003, LIB-011 reworded). New open questions Q-011 and Q-012.

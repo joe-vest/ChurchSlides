@@ -1,8 +1,9 @@
 # Development Plan: Church Presentation App
 
-Version: 0.1 (draft for review)
+Version: 0.2
 Date: 2026-11-23
-Inputs: `Functional Requirements  Church Presentation App.md` (FRD), `Architecture.md` (ARCH)
+Inputs: `docs/FRD.md` (FRD v0.3), `docs/ARCHITECTURE.md` (ARCH v0.2)
+Changes in 0.2: document review decisions. New chunks C1.3c (model and storage changes from the review) and C2.6 (settings screens); the M2 fix-up chunk is now C2.7. One combined spike program. Requirement lists updated for FRD v0.3.
 Audience: the product owner (review and gates) and Claude Code (execution)
 
 This plan breaks the build into **work chunks** sized to fit one focused Claude Code session, orders them so risk is retired early and every milestone is usable, and defines the **plan → execute → verify** routine each chunk follows. Chunk IDs (`C3.2`) are stable. Reference them in commits and in `docs/STATUS.md`.
@@ -118,6 +119,8 @@ Size: **S** = small (under about 600 lines), **M** = medium, **L** = large (cons
 - **FRD v0.2 amendments:** Actions on Service Items and "within this Show" targets (Q-A1, ACT-002/022/023); `NextItem`/`PreviousItem` commands; audio stops on operator-initiated item change (Q-A7, replaces Q-003); timer tokens standalone (Q-A3); §0 point 6 reference fix.
 - **Done when:** `dotnet build` and `dotnet test` pass on an empty solution; dependency-rule test passes.
 
+C0.2 to C0.4 are separate chunks so each fits one session, but they build **one spike program** in `spike/`, with a tab per area and an on-screen checklist that writes the figures to a file. The owner then needs only one visit to the church for G0 (ARCH §12). Start them now: they are on the critical path, and only C1.3c to C1.5 remain of the headless work.
+
 #### C0.2: Spike A, output and crossfade. Size M (throwaway, in `spike/`)
 - Covers S1, S2, S6, S7, S8 from ARCH §12: borderless output on a chosen monitor at exact pixels; two-bitmap crossfade; memory and CPU readouts shown on screen; .NET 10 on the church Windows 10 build; ReadyToRun size and startup time.
 
@@ -126,9 +129,9 @@ Size: **S** = small (under about 600 lines), **M** = medium, **L** = large (cons
 - **Outcome:** a written verdict on D-3/D-4 (own model plus own renderer), and a list of control quirks to design around.
 
 #### C0.4: Spike C, audio and timer. Size M
-- S4, S5: compare `Mp3FileReader` vs `MediaFoundationReader` and WaveOut vs WASAPI for trim, seek, and position accuracy, with a click-to-measure latency test. Fixed-cell timer digits running 10+ minutes next to the wall clock.
+- S4, S5: compare `Mp3FileReader` vs `MediaFoundationReader` and WaveOut vs WASAPI for trim, seek, and position accuracy, with a click-to-measure latency test. Cue latency while slides pre-render on the UI thread. Behaviour when the default audio device changes mid-song (projector HDMI plugged in or out). Fixed-cell timer digits running 10+ minutes next to the wall clock.
 
-**G0 (owner):** run the three spike apps on the church machine, send the numbers and impressions. I write `docs/SPIKE-RESULTS.md` and update ARCH where reality disagrees. Do not start C1.x UI-dependent work until this is done. (C1.1 to C1.3 are headless and may start in parallel.)
+**G0 (owner):** run the spike program on the church machine, send the numbers and impressions. I write `docs/SPIKE-RESULTS.md` and update ARCH where reality disagrees. Do not start C1.x UI-dependent work until this is done. (C1.1 to C1.3 are headless and may start in parallel.)
 
 ---
 
@@ -152,15 +155,21 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 - **Do:** `ILibrary` and repositories for Shows, Services, Templates, Service Templates, Categories, Library settings; atomic `.saving` writer with retry; content-hash and last-write tracking; schema migration framework; local-data paths in `%LOCALAPPDATA%`; draft store.
 - **Tests:** against a temp folder: atomic save survives a simulated crash mid-write, `.saving` files ignored, overwrite conflict detected, migration chain.
 
+#### C1.3c: Model and storage changes from the document review. Size S
+- **FRD:** LIB-013, CAT-010, SCR-013, ACT-013/014 (Service Item), ACT-026..028, ACT-033, MODE-001, TMR-001.
+- **Do:** Service state file (`services/{id}.state.json`: Mode, check dismissals, CCLI-016 answer) with read, write, and missing-file defaults; move `Mode` out of the Service file; built-in Scripture Category with a fixed ID, added to `categories.json` on load if missing, delete refused; remove `LibrarySettings.DefaultScriptureTemplateId`; `Normal` command; trigger validity rules (which triggers are valid on which level); Timer name rule shared with Variables.
+- **Schema:** amend version 1 in place (owner decision, 2026-11-23: no real Library exists yet). No migration step.
+- **Tests:** state file round trip and defaults; Scripture Category always present and not deletable; Service files no longer contain `Mode`.
+
 #### C1.4: Library watching and search. Size M
 - **FRD:** LIB-006/007/009/010/011, CAT-003..006.
 - **Do:** debounced `FileSystemWatcher` pipeline; self-write suppression; conflict-copy and duplicate-ID detection; in-memory search index with incremental updates; Library-unavailable handling.
 - **Tests:** simulated bursts of file events, Drive-style temp files, duplicate IDs; search ranking, accent insensitivity, filter by Kind/Category. Includes AS-08 (edit conflict) at the storage level.
 
 #### C1.5: Navigation engine. Size M. **Review gate**
-- **FRD:** LIVE-005..009, LIVE-010..014, LIVE-040, SVC-021/026, ARCH §5.2 and §6.1-6.2.
-- **Do:** `ServiceSequence` index grouped by item; `PresentationSession` with immutable `PresentationState`; `ICommandApi` including `NextItem`/`PreviousItem` and `Origin`; screen state (Black/Clear/Logo toggles); re-anchoring when the Service changes mid-presentation; item/slide position info; `ItemChanged` event.
-- **Tests:** AS-02 (continuous flow with skips, placeholders, missing shows, end stop, no wraparound); item-level navigation; screen state persisting through navigation (LIVE-014).
+- **FRD:** LIVE-004 (click rules), LIVE-005..009, LIVE-010..014, LIVE-016..018, LIVE-040/041, SVC-021, SVC-025 (skip list ignored for cued Shows), SVC-026/027, ACT-005/006 (event order), DEC-021, MODE-005, ARCH §5.2 and §6.1-6.3.
+- **Do:** `ServiceSequence` with every slide and a displayable flag; `PresentationSession` with immutable `PresentationState`; selection while not presenting and `StartPresenting(service, mode)`; `ICommandApi` including `NextItem`/`PreviousItem`, `Origin`, `ToggleScreen` and `SetScreen`; re-anchoring when the Service changes mid-presentation, including a removed current slide or item; item/slide position info; the fixed event sequence of ACT-005 as engine events (the Action processor in C5.2 and audio in C4.1 subscribe to it).
+- **Tests:** AS-02 (continuous flow with skips, placeholders, missing shows, end stop, no wraparound); item-level navigation; items with no displayable slide; Next/Previous from a clicked skipped slide; going to the current slide fires nothing; screen state persisting through navigation (LIVE-014); event order on item change, with operator vs automation origin.
 - Review gate: this is the operator's mental model, so the owner confirms behaviors before UI is built on top.
 
 ---
@@ -170,11 +179,11 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 #### C2.1: Slide renderer and image pipeline. Size L (split at plan time into 2.1a renderer, 2.1b image cache)
 - **FRD:** SLD-002/003/006/007/008, LIB-011, PLT-006, FUT-003, ARCH §7.
 - **Do:** layered `SlideRenderer` (background, text, live text, screen state) from a `RenderModel`; `FormattedText` run layout; background fit modes; letterboxing; downscaled image cache on disk plus byte-bounded LRU; bitmap prerender window (current, next, previous); thumbnails; the **headless PNG render harness** (§1.6); missing-media fallback.
-- **Tests:** golden-image renders for text styling, fit modes, letterbox; memory-bounded cache behavior; missing media doesn't throw.
+- **Tests:** golden-image renders for text styling, fit modes, letterbox; memory-bounded cache behavior; missing media doesn't throw. Golden images are rendered with software rendering and a fixed font set, and compared with a small tolerance, so they don't break across machines.
 
 #### C2.2: Output window and operator shell. Size L. **Review gate (G1)**
 - **FRD:** LIVE-001..004, LIVE-010..013, LIVE-020..022, LIVE-030..033, PLT-006.
-- **Do:** composition root and DI; monitor enumeration and `OutputWindow` (fallback to primary); Cut and crossfade; main operator window: **Service view with items as headers and slides beneath**, current-slide highlight, click to jump; current and next Preview; Black/Clear/Logo controls with active state; always-visible audio indicator slot; hotkeys on both windows; exception guards (SAFE-006). Service loaded from a hand-edited JSON file (no editors yet).
+- **Do:** composition root and DI; monitor enumeration and `OutputWindow` (fallback to primary, black when not presenting); Cut and crossfade; main operator window: **Service view with items as headers and slides beneath**, current-slide highlight, click to select or jump; **Go Live** and **Rehearse** buttons; current and next Preview; Black/Clear/Logo controls with active state; always-visible audio indicator slot; hotkeys on both windows; exception guards (SAFE-006); a small debug readout of working set and CPU, kept for every later gate. Output display and logo come from the settings files (screens arrive in C2.6). Services come from a **sample-data builder** (a small tool or test helper that writes a realistic Library), not hand-edited JSON. The acceptance tests reuse it.
 - **Done when:** a hand-built Service can be presented end to end with keyboard and clicker keys.
 - **G1 (owner):** run on the church projector. Review the Service view layout against the item/slide mental model before the editors are built.
 
@@ -185,15 +194,19 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 - Highest UI risk. Plan this using the spike's findings, and split off the converters as their own sub-chunk if needed.
 
 #### C2.4: Shows, Catalog, categories, search UI. Size M
-- **FRD:** CAT-001..007, SHOW-001..007, SLD-004.
-- **Do:** Catalog window (list, filters, instant search); create/duplicate/rename/recategorize/delete (with "used in these Services" warning); Show editor shell (slide list: add, duplicate, delete, reorder, label); metadata form; categories management; audio and actions slots left as empty tabs.
+- **FRD:** CAT-001..007, CAT-010, SHOW-001..008.
+- **Do:** Catalog window (list, filters, instant search); create/duplicate/rename/recategorize/delete (with "used in these Services" warning); Show editor shell (slide list: add, duplicate, delete, reorder, label, Skipped mark); metadata form; categories management (the Scripture Category can be renamed, not deleted); audio and actions slots left as empty tabs.
 
 #### C2.5: Service editor. Size L (split at plan time)
-- **FRD:** SVC-001..004, SVC-020..026, VAR-007 (shell only).
-- **Do:** Service list (newest first); create blank/duplicate/rename/delete; add items from Catalog via search; reorder/remove; per-slide skip toggles; "edit slide" flow with the Presentation auto-fork and the Song prompt (SVC-022); "Modified for this Service" marker and Revert to catalog; "Missing show" display.
+- **FRD:** SVC-001..004, SVC-020..028, VAR-007 (shell only).
+- **Do:** Service list (newest first); create blank/duplicate/rename/delete; add items from Catalog via search; reorder/remove; per-slide skip toggles (disabled with an explanation for cued Shows); "Reset to catalog defaults"; "edit slide" flow with the Presentation auto-fork and the Song prompt (SVC-022); "Modified for this Service" marker and Revert to catalog; "Missing show" display. Use the existing domain operations (`EditPolicy`, `ShowCopying`, `ShowItems`, `SkipRules`).
 - **Tests:** AS-06 (per-Service edit) at view-model level.
 
-**M2 / G2 (owner):** build a real Sunday service at home, sync via Drive, present at church. Collect UX fixes into a short fix-up chunk **C2.6** before moving on.
+#### C2.6: Settings screens. Size M
+- **FRD:** LIB-001, LIB-010 (choose another folder), SLD-001, SLD-004 (after Q-012), LIVE-001 (output display), LIVE-012 (logo), LIVE-030/031 (transition), CCLI-001, CCLI-004 (copyright format), TPL-012 (Library default Template).
+- **Do:** Library settings screen (synced: canvas aspect, logo, transition, CCLI licence, copyright format, Library default Template) and machine settings screen (local: Library folder, output display, remote on/off placeholder). Changes apply without restart where the FRD expects it.
+
+**M2 / G2 (owner):** build a real Sunday service at home, sync via Drive, present at church. Collect UX fixes into a short fix-up chunk **C2.7** before moving on.
 
 ---
 
@@ -217,9 +230,9 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 ### Phase 4: Audio (M4)
 
 #### C4.1: Audio engine and cue controller. Size M. **Review gate**
-- **FRD:** AUD-001..007, 013..020, DEC-013, ARCH §6.5.
-- **Do:** `IAudioPlayer`/`IPlaybackClock`; NAudio implementation using the spike's chosen reader and output; trim; `CueController` against a fake clock; item-change audio policy (Q-A7, option 3) via command `Origin`; audio indicator with Stop and Restart.
-- **Tests (headless, fake clock/player):** AS-03; stop on operator item change, not on Cue/Action; start while playing is a no-op; cues driving slides only while the owning item is current.
+- **FRD:** AUD-001..007, 013..021, DEC-013, DEC-020, ARCH §6.5.
+- **Do:** `IAudioPlayer`/`IPlaybackClock`; NAudio implementation using the spike's chosen reader and output; trim; `CueController` against a fake clock; item-change audio policy (DEC-020) via command `Origin`, hooked into the ACT-005 event order from C1.5; `StartAudio` only at the first displayable slide (AUD-021); Restart from another item; audio indicator with Stop and Restart; default-device change handling.
+- **Tests (headless, fake clock/player):** AS-03; stop on operator item change, not on Cue/Action; song A → song B by the operator plays B; entering a song at its last slide doesn't start audio; start while the same Show plays is a no-op; cues driving slides only while the owning item is current.
 
 #### C4.2: Audio and cue editor UI. Size L
 - **FRD:** AUD-008..012, SVC-025.
@@ -232,14 +245,14 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 ### Phase 5: Timers and Actions (M5)
 
 #### C5.1: Timers. Size M
-- **FRD:** TMR-001..016.
+- **FRD:** TMR-001..017.
 - **Do:** `TimerService` on `IClock` with whole-second alignment; states and expiry-once logic; clock-time and duration types; live text slots in the renderer with fixed-cell digits; warning color; auto-start on display; Timer definitions UI on Service and Service Template.
 - **Tests:** deterministic fake-clock tests for every TMR rule, including late start. Visual check for flicker at G5.
 
 #### C5.2: Action processor. Size L (split: engine, then UI)
 - **FRD:** ACT-001..044, Q-A1 amendment.
-- **Do:** triggers and commands; delays and cancellation; loop guard; pending-action info; Actions on Slide, Show, **Service Item**, Service, Service Template; "within this Show" targets; `IdRemapper` coverage for Action targets; Action editor UI with the one-click auto-advance shortcut.
-- **Tests:** AS-04 end to end on fake clock (loop, countdown, red at 60 s, jump at expiry); loop guard trips only on rapid cycles; cancellation on slide change.
+- **Do:** triggers and commands (including `Normal`, and `SlideDisplayed`/`SlideEnded` on a Service Item); run order across levels (ACT-006) on the event sequence from C1.5; delays and cancellation, including all pending Actions on Stop presenting; loop guard that pauses Actions for the current item only; pending-action info; Actions on Slide, Show, **Service Item**, Service, Service Template; "within this Show" targets; `IdRemapper` coverage for Action targets; Action editor UI with the one-click auto-advance shortcut.
+- **Tests:** AS-04 end to end on fake clock (loop, countdown, red at 60 s, jump at expiry); loop guard trips only on rapid cycles and resumes on the next item; cancellation on slide change and on stop; run order across levels.
 
 **G5 (owner):** run AS-04 on the projector.
 
@@ -248,13 +261,13 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 ### Phase 6: Compliance (M6)
 
 #### C6.1: Mode and CCLI logging. Size M
-- **FRD:** MODE-001..004, CCLI-001..016, CCLI-020, CCLI-024.
-- **Do:** Mode toggle and indicator; CCLI metadata UI; close flow (summary, OK/Cancel, safety-net prompt); per-Service log files with replace semantics; CSV export by date range; Usage Log viewer shell.
+- **FRD:** MODE-001..005, CCLI-001..018, CCLI-020, CCLI-024.
+- **Do:** Mode switch while presenting and indicator (Go Live / Rehearse exist from C2.2); CCLI metadata UI; close flow (summary, OK/Cancel, safety-net prompt); crash safety net on startup (CCLI-018); per-Service log files with replace semantics; CSV export by date range; Usage Log viewer (CCLI-017).
 - **Tests:** AS-07 end to end, including idempotent logging and distinct-Service counting.
 
 #### C6.2: Pre-service check. Size M
 - **FRD:** CHK-001..004, ACT-041, LIB-011, TPL-027, SLD-028.
-- **Do:** `ICheckRule` per CHK-001 item; panel with click-through; per-Service dismissals; auto-run when presenting starts.
+- **Do:** `ICheckRule` per CHK-001 item (including the zero-delay Action cycle rule); panel with click-through; per-Service dismissals in the Service state file; auto-run when presenting starts.
 
 #### C6.3: CCLI reporting polish. Size S (after Q-005 answered)
 - **FRD:** CCLI-021..023.
@@ -273,7 +286,7 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 
 #### C7.2: Scripture items. Size M
 - **FRD:** SCR-007..013, SCR-016, SVC-002.
-- **Do:** slide generation (verses per slide, inline verse numbers, per-slide reference line); Service-local result; Regenerate with warning; Library default Scripture Template; import UI (display name, abbreviation).
+- **Do:** slide generation (verses per slide, inline verse numbers, per-slide reference line); Service-local result in the Scripture Category (CAT-010); Regenerate with warning; Scripture Items with an empty reference (stubs from a Service Template); import UI (display name, abbreviation).
 - **Tests:** generation shape and boundaries; AS-01's Rom 8:28-39 case.
 
 ---
@@ -281,7 +294,7 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 ### Phase 8: Phone remote (M8)
 
 #### C8.1: Remote host. Size M
-- **FRD:** REM-001..010, FUT-004.
+- **FRD:** REM-001..010, FUT-004. Ask Q-011 (slide text on the remote) at plan time.
 - **Do:** lazy-loaded Kestrel host; embedded single page; token and cookie; private-IP filter; command endpoints into `ICommandApi` (with `Origin = Operator`); SSE state stream; QR code and URL in operator UI; firewall note.
 - **Tests:** endpoint tests with an in-process test server (auth, IP filter, commands, SSE shape). Measure the RAM impact with the remote on and off (PLT-005).
 
@@ -314,14 +327,14 @@ These chunks need no UI and no hardware, so they run fully test-first and are th
 ## 4. Order and dependencies
 
 ```
-C0.1 ──► C1.1 ──► C1.2 ──► C1.3 ──► C1.4
-  │        │                          │
-  │        └──────────► C1.5 ◄────────┘          (headless, can start before G0)
+C0.1 ──► C1.1 ──► C1.2 ──► C1.3 ──► C1.3c ──► C1.4
+  │        │                                     │
+  │        └──────────► C1.5 ◄───────────────────┘   (headless, can start before G0)
   │
   ├──► C0.2 ─┐
-  ├──► C0.3 ─┼──► G0 ──► C2.1 ──► C2.2 ──► G1 ──► C2.3 ──► C2.4 ──► C2.5 ──► G2 (M2)
-  └──► C0.4 ─┘                                                                  │
-                                              ┌─────────────────────────────────┘
+  ├──► C0.3 ─┼──► G0 ──► C2.1 ──► C2.2 ──► G1 ──► C2.3 ──► C2.4 ──► C2.5 ──► C2.6 ──► G2 (M2) ──► C2.7
+  └──► C0.4 ─┘                                                                                     │
+                                              ┌────────────────────────────────────────────────────┘
                                               ▼
                           C3.1 ► C3.2 ► C3.3 ► C4.1 ► C4.2 ► C5.1 ► C5.2 ► C6.1 ► C6.2 ► C6.3
                                                                                           │
@@ -362,12 +375,14 @@ Notes on ordering:
 | Before C2.3 | A few sample slides you like (screenshots from FreeShow are fine) to use as visual targets for Templates and text. |
 | G1, G2 | Hands-on review at the projector. |
 | Before C6.3 | CCLI's current manual-reporting spreadsheet (Q-005). |
-| Anytime | Answers to remaining FRD open questions: Q-004 (Black/Clear/Logo and navigation), Q-006 (reference line scope), Q-007 (copyright placement), Q-008 (Presentations and CCLI), Q-009 (mode switch UI), Q-010 (product name). Q-004 is needed by C1.5, and Q-006 by C7.2. |
+| Before C2.6 | Q-012 (what changing the canvas aspect ratio should do). |
+| Before C8.1 | Q-011 (slide text on the phone remote). |
+| Anytime | Confirm or change the defaults of Q-001, Q-002, Q-006 (needed by C7.2) and Q-007. |
 
 ---
 
 ## 7. Proposed first moves
 
-1. Run **C0.1** now (plan, then execute). It's small and unblocks everything.
-2. In parallel with your spike scheduling, run **C1.1** and **C1.2**, which are headless and don't wait on hardware.
-3. Build **C0.2-C0.4** and hand them to you for **G0**.
+1. ~~C0.1, C1.1, C1.2, C1.3.~~ Done.
+2. Build the combined spike program (**C0.2-C0.4**) next and hand it to you for **G0**. It's the critical path.
+3. While G0 is being scheduled, run **C1.3c**, **C1.4** and **C1.5**, which are headless.
