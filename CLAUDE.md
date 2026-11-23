@@ -13,7 +13,7 @@ A Windows desktop app (.NET 10, WPF) for building and running church service sli
 ## Rules
 
 1. **Never reverse FRD section 2 decisions** (DEC-xxx) or "improve" them. Ask first. Stay out of FRD section 22 (out of scope).
-2. **Use glossary names** (FRD section 3) for classes, files and UI labels: Library, Catalog, Show, Slide, TextBox, Template, Service, ServiceItem, Variable, Timer, Action, Cue. No synonyms such as Project, Section, Group.
+2. **Use glossary names** (FRD section 3) for classes, files and UI labels: Library, Catalog, Show, Slide, TextBox, Template, Service, ServiceItem, Variable, Timer, Action, Cue. No synonyms such as Project, Section, Group. Four collide with .NET/WPF types, so their C# names are `TriggeredAction` (Action), `CountdownTimer` (Timer), `ActionTrigger` (Trigger) and `SlideTextBox` (Text Box). UI labels keep the glossary words.
 3. **Reference requirement IDs** (for example `AUD-017`) in tests, and in commit messages. Name tests so the ID is findable.
 4. **Dependency rule** (enforced by `tests/ChurchSlides.Architecture.Tests`):
    `Domain` ← `Storage`, `Scripture` ← `Engine` ← `Audio`, `Rendering`, `Remote` ← `App`.

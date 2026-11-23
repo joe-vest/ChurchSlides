@@ -15,8 +15,8 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | PLT-009 | MUST | C0.2-C0.4 | todo |
 | LIB-001 | MUST | C1.3 | todo |
 | LIB-002 | MUST | C1.3 | todo |
-| LIB-003 | MUST | C1.3 | todo |
-| LIB-004 | MUST | C1.3 | todo |
+| LIB-003 | MUST | C1.3 | partial (C1.1: types and file format; behavior in later chunks) |
+| LIB-004 | MUST | C1.3 | partial (C1.1: types and file format; behavior in later chunks) |
 | LIB-005 | MUST | C1.3 | todo |
 | LIB-006 | MUST | C1.4 | todo |
 | LIB-007 | MUST | C1.4 | todo |
@@ -41,15 +41,15 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SHOW-005 | MUST | C2.4 | todo |
 | SHOW-006 | MUST | C2.4 | todo |
 | SHOW-007 | MUST | C2.4 | todo |
-| SLD-001 | MUST | C1.1 | todo |
+| SLD-001 | MUST | C1.1 | partial (C1.1: types and file format; behavior in later chunks) |
 | SLD-002 | MUST | C2.1 | todo |
 | SLD-003 | MUST | C2.1 | todo |
 | SLD-004 | SHOULD | C2.4 | todo |
-| SLD-005 | MUST | C1.1 | todo |
+| SLD-005 | MUST | C1.1 | partial (C1.1: types and file format; behavior in later chunks) |
 | SLD-006 | MUST | C2.1 | todo |
 | SLD-007 | MUST | C2.1 | todo |
 | SLD-008 | SHOULD | C2.1 | todo |
-| SLD-009 | MUST | C1.1 | todo |
+| SLD-009 | MUST | C1.1 | partial (C1.1: types and file format; behavior in later chunks) |
 | SLD-020 | MUST | C2.3 | todo |
 | SLD-021 | MUST | C2.3 | todo |
 | SLD-022 | MUST | C2.3 | todo |
@@ -254,7 +254,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | IMP-002 | COULD | C9.5 (deferred) | todo |
 | IMP-003 | COULD | C9.5 (deferred) | todo |
 | IMP-004 | COULD | C9.5 (deferred) | todo |
-| FUT-001 | MUST | C1.5, C2.1 | todo |
+| FUT-001 | MUST | C1.5, C2.1 | partial (C1.1: types and file format; behavior in later chunks) |
 | FUT-002 | MUST | C1.5, C2.1 | todo |
 | FUT-003 | MUST | C1.5, C2.1 | todo |
 | FUT-004 | SHOULD | C1.5, C2.1 | todo |

@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "title": "Amazing Grace — Señor",
+    "kind": "Song",
+    "categoryId": "00000000-0000-0000-0000-000000000002",
+    "copyrightPlacement": "FirstSlide",
+    "tags": [
+      "hymn",
+      "communion"
+    ],
+    "metadata": {
+      "authors": "John Newton",
+      "copyright": "Public domain",
+      "ccliSongNumber": "22025",
+      "isPublicDomain": true
+    },
+    "defaultTemplateId": "00000000-0000-0000-0000-000000000003",
+    "slides": [
+      {
+        "id": "00000000-0000-0000-0000-000000000010",
+        "label": "Verse 1",
+        "textBoxes": [
+          {
+            "id": "00000000-0000-0000-0000-000000000020",
+            "boundTemplateBoxName": "body",
+            "content": {
+              "paragraphs": [
+                {
+                  "inlines": [
+                    {
+                      "$type": "text",
+                      "text": "Amazing grace, how "
+                    },
+                    {
+                      "$type": "text",
+                      "text": "sweet",
+                      "format": {
+                        "bold": true
+                      }
+                    },
+                    {
+                      "$type": "text",
+                      "text": " the sound"
+                    }
+                  ]
+                },
+                {
+                  "inlines": [
+                    {
+                      "$type": "text",
+                      "text": "That saved a wretch like me",
+                      "format": {
+                        "fontFamily": "Georgia",
+                        "fontSize": 0.06,
+                        "colorHex": "#FF0000",
+                        "italic": true
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "actions": []
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000011",
+        "label": "Chorus",
+        "templateOverrideId": "00000000-0000-0000-0000-000000000004",
+        "backgroundOverride": {
+          "kind": "Image",
+          "mediaPath": "media/images/sunrise.jpg",
+          "fit": "Fit"
+        },
+        "textBoxes": [
+          {
+            "id": "00000000-0000-0000-0000-000000000021",
+            "geometry": {
+              "x": 0.1,
+              "y": 0.2,
+              "width": 0.8,
+              "height": 0.5
+            },
+            "content": {
+              "paragraphs": [
+                {
+                  "inlines": [
+                    {
+                      "$type": "text",
+                      "text": "I once was lost, but now am found"
+                    }
+                  ]
+                }
+              ]
+            },
+            "hAlign": "Left",
+            "vAlign": "Top",
+            "lineSpacing": 1.2
+          }
+        ],
+        "actions": [
+          {
+            "trigger": {
+              "$type": "slideDisplayed"
+            },
+            "delay": "00:00:08",
+            "commands": [
+              {
+                "$type": "nextSlide"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-0000-0000-000000000012",
+        "label": "Verse 2",
+        "backgroundOverride": {
+          "kind": "SolidColor",
+          "colorHex": "#102030",
+          "fit": "Fill"
+        },
+        "textBoxes": [
+          {
+            "id": "00000000-0000-0000-0000-000000000022",
+            "boundTemplateBoxName": "body",
+            "content": {
+              "paragraphs": [
+                {
+                  "inlines": [
+                    {
+                      "$type": "text",
+                      "text": "Preacher: "
+                    },
+                    {
+                      "$type": "token",
+                      "token": {
+                        "$type": "variable",
+                        "name": "preacher"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "inlines": [
+                    {
+                      "$type": "token",
+                      "token": {
+                        "$type": "timer",
+                        "name": "ServiceStart"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "inlines": [
+                    {
+                      "$type": "token",
+                      "token": {
+                        "$type": "showMetadata",
+                        "field": "Title"
+                      }
+                    },
+                    {
+                      "$type": "text",
+                      "text": " / "
+                    },
+                    {
+                      "$type": "token",
+                      "token": {
+                        "$type": "churchLicense"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "actions": [
+          {
+            "trigger": {
+              "$type": "slideEnded"
+            },
+            "delay": "00:00:00",
+            "commands": [
+              {
+                "$type": "clear"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "audio": {
+      "mediaPath": "media/audio/amazing-grace.mp3",
+      "trimStart": "00:00:02.4000000",
+      "trimEnd": "00:03:20",
+      "cues": [
+        {
+          "slideId": "00000000-0000-0000-0000-000000000011",
+          "position": "00:00:31.5000000"
+        },
+        {
+          "slideId": "00000000-0000-0000-0000-000000000012",
+          "position": "00:01:00"
+        }
+      ]
+    },
+    "actions": [
+      {
+        "trigger": {
+          "$type": "showStarted"
+        },
+        "delay": "00:00:00",
+        "commands": [
+          {
+            "$type": "startAudio"
+          }
+        ]
+      },
+      {
+        "trigger": {
+          "$type": "audioEnded"
+        },
+        "delay": "00:00:00",
+        "commands": [
+          {
+            "$type": "nextItem"
+          }
+        ]
+      }
+    ]
+  }
+}

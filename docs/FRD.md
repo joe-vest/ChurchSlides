@@ -107,6 +107,15 @@ Use these names exactly.
 | Preview | `Preview` | The operator's view of the current and next slides. |
 | Bible | `Bible` | An imported translation, from Zefania XML. |
 
+**Code-name exceptions.** Four glossary terms collide with built-in .NET/WPF types, so their C# names differ. UI labels and all FRD wording stay as in the table above.
+
+| Glossary term | C# name | Collides with |
+|---|---|---|
+| Action | `TriggeredAction` | `System.Action` |
+| Timer | `CountdownTimer` | `System.Threading.Timer` |
+| Trigger | `ActionTrigger` | `System.Windows.Trigger` |
+| Text Box | `SlideTextBox` | `System.Windows.Controls.TextBox` |
+
 ### 3.1 Hierarchy
 
 ```

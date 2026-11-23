@@ -5,5 +5,10 @@
   </PropertyGroup>
 
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="ChurchSlides.Domain.Tests" />
+  </ItemGroup>
+
 </Project>
+
 

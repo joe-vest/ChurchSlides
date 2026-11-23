@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "id": "00000000-0000-0000-0000-000000000003",
+    "name": "Hymns",
+    "background": {
+      "kind": "Image",
+      "mediaPath": "media/images/hymn-bg.png",
+      "fit": "Fill"
+    },
+    "boxes": [
+      {
+        "name": "body",
+        "geometry": {
+          "x": 0.05,
+          "y": 0.1,
+          "width": 0.9,
+          "height": 0.7
+        },
+        "defaults": {
+          "fontFamily": "Georgia",
+          "fontSizeRelative": 0.08,
+          "colorHex": "#FFFFFF",
+          "bold": true,
+          "italic": false,
+          "hAlign": "Center",
+          "vAlign": "Middle",
+          "lineSpacing": 1.1,
+          "outline": {
+            "colorHex": "#000000",
+            "thickness": 0.002
+          },
+          "shadow": {
+            "colorHex": "#000000",
+            "offsetX": 0.003,
+            "offsetY": 0.003,
+            "blur": 0.004
+          }
+        },
+        "isCopyrightBox": false
+      },
+      {
+        "name": "copyright",
+        "geometry": {
+          "x": 0.05,
+          "y": 0.9,
+          "width": 0.9,
+          "height": 0.08
+        },
+        "defaults": {
+          "fontFamily": "Segoe UI",
+          "fontSizeRelative": 0.025,
+          "colorHex": "#FFFFFF",
+          "bold": false,
+          "italic": false,
+          "hAlign": "Left",
+          "vAlign": "Middle",
+          "lineSpacing": 1
+        },
+        "isCopyrightBox": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "id": "00000000-0000-0000-0000-000000000007",
+    "name": "Sunday Morning",
+    "date": "2026-12-06",
+    "mode": "Live",
+    "items": [
+      {
+        "$type": "showReference",
+        "id": "00000000-0000-0000-0000-000000000100",
+        "showId": "00000000-0000-0000-0000-000000000001",
+        "skippedSlideIds": [
+          "00000000-0000-0000-0000-000000000011"
+        ],
+        "filledFrom": {
+          "label": "Opening song",
+          "categoryFilter": "00000000-0000-0000-0000-000000000002",
+          "kindFilter": "Song"
+        },
+        "templateOverrideId": "00000000-0000-0000-0000-000000000004",
+        "actions": [
+          {
+            "trigger": {
+              "$type": "showEnded"
+            },
+            "delay": "00:00:00",
+            "commands": [
+              {
+                "$type": "stopAudio"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "$type": "showCopy",
+        "id": "00000000-0000-0000-0000-000000000101",
+        "localShow": {
+          "id": "00000000-0000-0000-0000-000000000005",
+          "title": "Welcome",
+          "kind": "Presentation",
+          "categoryId": "00000000-0000-0000-0000-000000000006",
+          "copyrightPlacement": "None",
+          "tags": [],
+          "slides": [
+            {
+              "id": "00000000-0000-0000-0000-000000000050",
+              "label": "Welcome",
+              "textBoxes": [
+                {
+                  "id": "00000000-0000-0000-0000-000000000051",
+                  "boundTemplateBoxName": "body",
+                  "content": {
+                    "paragraphs": [
+                      {
+                        "inlines": [
+                          {
+                            "$type": "text",
+                            "text": "Welcome to church"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "actions": []
+            }
+          ],
+          "actions": []
+        },
+        "originShowId": "00000000-0000-0000-0000-000000000005",
+        "actions": []
+      },
+      {
+        "$type": "placeholder",
+        "id": "00000000-0000-0000-0000-000000000102",
+        "placeholder": {
+          "label": "Communion liturgy",
+          "categoryFilter": "00000000-0000-0000-0000-000000000009"
+        },
+        "actions": []
+      },
+      {
+        "$type": "scripture",
+        "id": "00000000-0000-0000-0000-000000000103",
+        "scripture": {
+          "bibleId": "esv",
+          "reference": "Rom 8:28-39",
+          "versesPerSlide": 2,
+          "showVerseNumbers": false,
+          "showReferenceLine": true,
+          "templateId": "00000000-0000-0000-0000-000000000003"
+        },
+        "generated": {
+          "id": "00000000-0000-0000-0000-000000000055",
+          "title": "Romans 8:28-39",
+          "kind": "Presentation",
+          "categoryId": "00000000-0000-0000-0000-000000000006",
+          "copyrightPlacement": "None",
+          "tags": [],
+          "slides": [
+            {
+              "id": "00000000-0000-0000-0000-000000000050",
+              "label": "Welcome",
+              "textBoxes": [
+                {
+                  "id": "00000000-0000-0000-0000-000000000051",
+                  "boundTemplateBoxName": "body",
+                  "content": {
+                    "paragraphs": [
+                      {
+                        "inlines": [
+                          {
+                            "$type": "text",
+                            "text": "Welcome to church"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "actions": []
+            }
+          ],
+          "actions": []
+        },
+        "actions": []
+      }
+    ],
+    "variables": [
+      {
+        "name": "preacher",
+        "value": "Pastor Sam"
+      },
+      {
+        "name": "sermon_title",
+        "value": ""
+      }
+    ],
+    "timers": [
+      {
+        "name": "ServiceStart",
+        "type": "CountdownToClockTime",
+        "targetClockTime": "10:00:00",
+        "endBehavior": "ContinueNegative",
+        "warningThresholdSeconds": 60,
+        "warningColorHex": "#FF0000",
+        "autoStartOnDisplay": true
+      },
+      {
+        "name": "Offering",
+        "type": "CountdownDuration",
+        "duration": "00:05:00",
+        "endBehavior": "HoldAtZero",
+        "warningThresholdSeconds": 0,
+        "autoStartOnDisplay": false
+      }
+    ],
+    "actions": [
+      {
+        "trigger": {
+          "$type": "serviceStarted"
+        },
+        "delay": "00:00:00",
+        "commands": [
+          {
+            "$type": "nextSlide"
+          },
+          {
+            "$type": "previousSlide"
+          },
+          {
+            "$type": "nextItem"
+          },
+          {
+            "$type": "previousItem"
+          },
+          {
+            "$type": "goToSlide",
+            "target": {
+              "slideId": "00000000-0000-0000-0000-000000000010",
+              "itemId": "00000000-0000-0000-0000-000000000100"
+            }
+          },
+          {
+            "$type": "goToSlide",
+            "target": {
+              "slideId": "00000000-0000-0000-0000-000000000011"
+            }
+          },
+          {
+            "$type": "goToItem",
+            "itemId": "00000000-0000-0000-0000-000000000102"
+          },
+          {
+            "$type": "startAudio"
+          },
+          {
+            "$type": "stopAudio"
+          },
+          {
+            "$type": "clear"
+          },
+          {
+            "$type": "black"
+          },
+          {
+            "$type": "logo"
+          },
+          {
+            "$type": "startTimer",
+            "timerName": "ServiceStart"
+          },
+          {
+            "$type": "stopTimer",
+            "timerName": "Offering"
+          }
+        ]
+      },
+      {
+        "trigger": {
+          "$type": "timerExpired",
+          "timerName": "ServiceStart"
+        },
+        "delay": "00:00:00.5000000",
+        "commands": [
+          {
+            "$type": "goToItem",
+            "itemId": "00000000-0000-0000-0000-000000000101"
+          }
+        ]
+      }
+    ],
+    "createdFromServiceTemplateId": "00000000-0000-0000-0000-000000000008"
+  }
+}

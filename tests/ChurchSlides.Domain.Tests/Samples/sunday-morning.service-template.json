@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "data": {
+    "id": "00000000-0000-0000-0000-000000000008",
+    "name": "Sunday Morning",
+    "items": [
+      {
+        "$type": "placeholder",
+        "id": "00000000-0000-0000-0000-000000000200",
+        "placeholder": {
+          "label": "Opening song",
+          "kindFilter": "Song"
+        },
+        "actions": []
+      },
+      {
+        "$type": "showReference",
+        "id": "00000000-0000-0000-0000-000000000201",
+        "showId": "00000000-0000-0000-0000-000000000005",
+        "skippedSlideIds": [],
+        "actions": []
+      },
+      {
+        "$type": "scripture",
+        "id": "00000000-0000-0000-0000-000000000202",
+        "scripture": {
+          "bibleId": "esv",
+          "reference": "Ps 23",
+          "versesPerSlide": 2,
+          "showVerseNumbers": true,
+          "showReferenceLine": true
+        },
+        "actions": []
+      }
+    ],
+    "variables": [
+      {
+        "name": "preacher",
+        "value": "TBD"
+      }
+    ],
+    "timers": [
+      {
+        "name": "ServiceStart",
+        "type": "CountdownDuration",
+        "duration": "00:10:00",
+        "endBehavior": "HoldAtZero",
+        "warningThresholdSeconds": 0,
+        "autoStartOnDisplay": true
+      }
+    ],
+    "actions": [
+      {
+        "trigger": {
+          "$type": "timerExpired",
+          "timerName": "ServiceStart"
+        },
+        "delay": "00:00:00",
+        "commands": [
+          {
+            "$type": "goToItem",
+            "itemId": "00000000-0000-0000-0000-000000000201"
+          }
+        ]
+      }
+    ]
+  }
+}
