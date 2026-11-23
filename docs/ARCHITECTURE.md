@@ -189,11 +189,13 @@ ICommandApi                                    // every call also takes an Origi
   GoToSlide(item?, slide) GoToItem(item)       // item omitted = within the current Show (ACT-022)
   ToggleScreen(Black|Clear|Logo)               // operator controls: toggles, mutually exclusive (LIVE-013)
   SetScreen(Normal|Black|Clear|Logo)           // Action commands: set, not toggle (ACT-026..028, ACT-033)
-  StartAudio() StopAudio() RestartAudio()
-  StartTimer(name) StopTimer(name)
-  Select(item, slide)                          // not presenting: selection only (DEC-021)
-  StartPresenting(service, mode) StopPresenting()   // Go Live / Rehearse (MODE-005)
+  StartAudio() StopAudio() RestartAudio()      // joins in C4.1
+  StartTimer(name) StopTimer(name)             // joins in C5.1
+  Select(item, slide?)                         // not presenting: selection only (DEC-021); no slide = item header
+  StartPresenting(mode) StopPresenting()       // Go Live / Rehearse (MODE-005)
 ```
+
+There is one `PresentationSession` per open Service: `new PresentationSession(service, findShow, onListenerError)`, then `StartPresenting(mode)`. Opening another Service means a new session. Members join the interface with the chunk that implements them (audio C4.1, Timers C5.1, mode switching C6.1). The session raises `StateChanged(PresentationState)` and `EventRaised(PresentationEvent)` synchronously on the caller's thread, queues commands issued from inside a listener, and sends listener exceptions to `onListenerError` (SAFE-006).
 
 Operator buttons, hotkeys, the phone remote, and the Action processor all call this one interface. There is one implementation (`PresentationSession`) and one place for logic like "navigating while Black is active keeps the screen state" (LIVE-014). Going to the slide that is already current changes nothing and fires no events (ACT-013).
 

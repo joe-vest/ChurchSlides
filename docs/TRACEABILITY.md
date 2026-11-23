@@ -144,25 +144,25 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | ACT-010 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
 | ACT-011 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
 | ACT-012 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
-| ACT-013 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
+| ACT-013 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save; C1.5b: re-going to the current slide fires nothing) |
 | ACT-014 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
 | ACT-015 | MUST | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
 | ACT-016 | SHOULD | C1.3c, C5.2 | partial (C1.3c: allowed levels checked on save) |
-| ACT-020 | MUST | C5.2 | todo |
-| ACT-021 | MUST | C5.2 | todo |
-| ACT-022 | MUST | C5.2 | todo |
-| ACT-023 | MUST | C5.2 | todo |
+| ACT-020 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
+| ACT-021 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
+| ACT-022 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
+| ACT-023 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
 | ACT-024 | MUST | C5.2 | todo |
 | ACT-025 | MUST | C5.2 | todo |
-| ACT-026 | MUST | C5.2 | todo |
-| ACT-027 | MUST | C5.2 | todo |
-| ACT-028 | MUST | C5.2 | todo |
+| ACT-026 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
+| ACT-027 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
+| ACT-028 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
 | ACT-029 | MUST | C5.2 | todo |
 | ACT-030 | MUST | C5.2 | todo |
-| ACT-031 | MUST | C5.2 | todo |
-| ACT-032 | MUST | C5.2 | todo |
+| ACT-031 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
+| ACT-032 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
 | ACT-040 | MUST | C5.2 | todo |
-| ACT-041 | MUST | C5.2 | todo |
+| ACT-041 | MUST | C5.2 | partial (C1.5b session command; run from Actions in C5.2) |
 | ACT-042 | MUST | C5.2 | todo |
 | ACT-043 | SHOULD | C5.2 | todo |
 | ACT-044 | MUST NOT | C5.2 | todo |
@@ -192,17 +192,17 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | LIVE-002 | MUST | C2.2 | todo |
 | LIVE-003 | MUST | C2.2 | todo |
 | LIVE-004 | MUST | C2.2 | todo |
-| LIVE-005 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
-| LIVE-006 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
-| LIVE-007 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
-| LIVE-008 | MUST | C1.5 | todo |
-| LIVE-009 | MUST | C1.5 | todo |
-| LIVE-016 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
+| LIVE-005 | MUST | C1.5 | done (C1.5a sequence, C1.5b session) |
+| LIVE-006 | MUST | C1.5 | done (C1.5a sequence, C1.5b session; list UI C2.2) |
+| LIVE-007 | MUST | C1.5 | done (C1.5a sequence, C1.5b session) |
+| LIVE-008 | MUST | C1.5 | done (C1.5b) |
+| LIVE-009 | MUST | C1.5 | done (C1.5b) |
+| LIVE-016 | MUST | C1.5 | done (C1.5a sequence, C1.5b session) |
 | LIVE-010 | MUST | C2.2 | todo |
 | LIVE-011 | MUST | C2.2 | todo |
 | LIVE-012 | MUST | C2.2 | todo |
-| LIVE-013 | MUST | C2.2 | todo |
-| LIVE-014 | MUST | C1.5 | todo |
+| LIVE-013 | MUST | C2.2 | partial (C1.5b toggle logic; buttons and rendering C2.2) |
+| LIVE-014 | MUST | C1.5 | done (C1.5b) |
 | LIVE-015 | MUST NOT | C2.2 | todo |
 | LIVE-020 | MUST | C2.2 | todo |
 | LIVE-021 | MUST | C2.2 | todo |
@@ -212,7 +212,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | LIVE-031 | MUST | C2.2 | todo |
 | LIVE-032 | MUST | C2.2 | todo |
 | LIVE-033 | MUST NOT | C2.2 | todo |
-| LIVE-040 | SHOULD | C1.5 | todo |
+| LIVE-040 | SHOULD | C1.5 | partial (C1.5b logic done; calling Refresh on changes C2.2) |
 | REM-001 | SHOULD | C8.1 | todo |
 | REM-002 | SHOULD | C8.1 | todo |
 | REM-003 | SHOULD | C8.1 | todo |
@@ -248,7 +248,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SAFE-003 | MUST | C2.3 | todo |
 | SAFE-004 | SHOULD | C9.1 | todo |
 | SAFE-005 | SHOULD | C9.1 | todo |
-| SAFE-006 | MUST | C9.1 | todo |
+| SAFE-006 | MUST | C9.1 | partial (C1.5b: a throwing session listener doesn't stop a move) |
 | SAFE-007 | MUST NOT | C9.1 | todo |
 | IMP-001 | COULD | C9.5 (deferred) | todo |
 | IMP-002 | COULD | C9.5 (deferred) | todo |
@@ -261,16 +261,16 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SHOW-008 | MUST | C1.2a (flag), C1.2b (rules), C2.4 (UI) | logic done (C1.2b); UI in a later chunk |
 | SVC-027 | MUST | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
 | SVC-028 | SHOULD | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
-| LIVE-017 | MUST | C1.5, C2.2 | partial (C1.5a sequence; session C1.5b; UI C2.2) |
+| LIVE-017 | MUST | C1.5, C2.2 | partial (C1.5 logic done; greyed list UI C2.2) |
 | TPL-014 | MUST | C1.2a | logic done (C1.2a) |
 | LIB-013 | MUST | C1.3c, C1.4, C6.1, C6.2 | partial (C1.3c: state file and repository; C1.4a: watched; Mode switch and CCLI flows later) |
 | CAT-010 | MUST | C1.3c, C2.4, C7.2 | partial (C1.3c: added on load, save refused without it; UI later) |
-| LIVE-018 | MUST | C1.5, C2.2 | todo |
-| LIVE-041 | MUST | C1.5 | todo |
-| MODE-005 | MUST | C1.5, C2.2 | todo |
-| ACT-005 | MUST | C1.5, C5.2 | todo |
+| LIVE-018 | MUST | C1.5, C2.2 | partial (C1.5b logic done; black Output C2.2) |
+| LIVE-041 | MUST | C1.5 | done (C1.5b) |
+| MODE-005 | MUST | C1.5, C2.2 | partial (C1.5b logic done; buttons and saving the Mode C2.2) |
+| ACT-005 | MUST | C1.5, C5.2 | partial (C1.5b event order done; Actions run in C5.2) |
 | ACT-006 | MUST | C5.2 | todo |
-| ACT-033 | MUST | C1.3c, C5.2 | partial (C1.3c: Normal command in the model; behavior in C5.2) |
+| ACT-033 | MUST | C1.3c, C5.2 | partial (C1.3c: Normal command in the model; C1.5b SetScreen(Normal); run from Actions in C5.2) |
 | AUD-021 | MUST | C4.1 | todo |
 | TMR-017 | MUST | C5.1 | todo |
 | CCLI-018 | MUST | C6.1 | todo |

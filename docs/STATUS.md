@@ -1,7 +1,7 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C1.5a done)
+Last updated: 2026-11-23 (C1.5 done)
 
 ## Chunks
 
@@ -17,7 +17,7 @@ Last updated: 2026-11-23 (C1.5a done)
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
 | C1.3c | Model and storage changes from the document review | done: C1.3c-1 domain, C1.3c-2 storage (313 domain, 86 storage tests, see docs/plans/C1.3c.md) |
 | C1.4 | Library watching and search | done: C1.4a watching, C1.4b search (131 storage tests, see docs/plans/C1.4.md) |
-| C1.5 | Navigation engine (review gate) | in progress: C1.5a sequence done (324 domain tests); C1.5b session next (see docs/plans/C1.5.md) |
+| C1.5 | Navigation engine (review gate) | done: C1.5a sequence (324 domain tests), C1.5b session (35 engine tests, see docs/plans/C1.5.md) |
 | C2.1 | Slide renderer and image pipeline | todo |
 | C2.2 | Output window and operator shell (G1) | todo |
 | C2.3 | Rich-text slide editor | todo |
@@ -62,7 +62,8 @@ Last updated: 2026-11-23 (C1.5a done)
 - C2.5: deleting a Service must also call `ServiceStates.Delete` (a state file with no Service is harmless but untidy).
 - C5.2: the Action editor must only offer triggers allowed at the level (`ActionRules.IsAllowed`); storage already refuses the rest.
 - C4.2 (cue editor): adding the first Cue to a Show with Skipped marks. FRD 0.3 says the marks and any Service skip lists are then ignored (SVC-025). The cue editor should say so.
-- C1.5b: the session must allow a direct jump to a skipped slide (LIVE-017). The sequence (C1.5a) already lists skipped slides and uses `SkipRules.InForce` for both item kinds.
+- The doc comments on `Clear`, `Black`, `Logo` in `Actions.cs` cite ACT-030..032; they should cite ACT-026..028.
+- C2.2: the App backs the session's `findShow` with the in-memory Library, calls `Refresh` on Library changes and editor saves, writes the Mode to the Service state file when presenting starts, and logs `onListenerError`.
 - C2.5: the editor must call `EditPolicy.ForSlideEdit`, `ShowCopying.Fork`/`Revert`, `ShowItems.AddReference`/`FillPlaceholder` and `SkipRules` rather than reimplement them.
 - C3.3: `ServiceCopying` must implement Save as Service Template conversions (SVC-005): Show Copies back to References, remembered Placeholders back to Placeholders, Scripture Items to stubs.
 - Id<T> uses `Activator`/`MakeGenericType` in its converter factory. Fine now, revisit if trimming or AOT is ever wanted.
