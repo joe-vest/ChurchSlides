@@ -94,12 +94,12 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SVC-023 | MUST | C1.2, C2.5 | partial (C1.2b: data kept; marker UI in C2.5) |
 | SVC-024 | SHOULD | C2.5 | logic done (C1.2b); UI in a later chunk |
 | SVC-025 | MUST | C1.2, C1.3c, C2.5 | logic done (C1.2b; shared `SkipRules.InForce` C1.3c); UI in a later chunk |
-| SVC-026 | MUST | C1.2, C2.5 | todo |
+| SVC-026 | MUST | C1.2, C1.5, C2.5 | partial (C1.5a: listed as Missing show, passed over); UI and check later |
 | SVC-030 | MUST | C3.3 | partial (C1.2b: instantiate logic; UI in C3.3) |
 | SVC-031 | MUST | C3.3 | todo |
 | SVC-032 | MUST | C3.3 | todo |
 | SVC-033 | SHOULD | C3.3 | todo |
-| SVC-034 | MUST | C3.3 | todo |
+| SVC-034 | MUST | C1.5, C3.3 | partial (C1.5a: passed over in the sequence); check in C3.3 |
 | SVC-035 | MUST | C3.3 | logic done (C1.2b); UI in a later chunk |
 | AUD-001 | MUST | C4.1 | todo |
 | AUD-002 | MUST | C4.1 | todo |
@@ -192,12 +192,12 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | LIVE-002 | MUST | C2.2 | todo |
 | LIVE-003 | MUST | C2.2 | todo |
 | LIVE-004 | MUST | C2.2 | todo |
-| LIVE-005 | MUST | C1.5 | todo |
-| LIVE-006 | MUST | C1.5 | todo |
-| LIVE-007 | MUST | C1.5 | todo |
+| LIVE-005 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
+| LIVE-006 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
+| LIVE-007 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
 | LIVE-008 | MUST | C1.5 | todo |
 | LIVE-009 | MUST | C1.5 | todo |
-| LIVE-016 | MUST | C1.5 | todo |
+| LIVE-016 | MUST | C1.5 | partial (C1.5a sequence; session C1.5b) |
 | LIVE-010 | MUST | C2.2 | todo |
 | LIVE-011 | MUST | C2.2 | todo |
 | LIVE-012 | MUST | C2.2 | todo |
@@ -261,7 +261,7 @@ Generated from docs/FRD.md in C0.1. Update the Status column (todo / done / part
 | SHOW-008 | MUST | C1.2a (flag), C1.2b (rules), C2.4 (UI) | logic done (C1.2b); UI in a later chunk |
 | SVC-027 | MUST | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
 | SVC-028 | SHOULD | C1.2b, C2.5 | logic done (C1.2b); UI in a later chunk |
-| LIVE-017 | MUST | C1.5, C2.2 | todo |
+| LIVE-017 | MUST | C1.5, C2.2 | partial (C1.5a sequence; session C1.5b; UI C2.2) |
 | TPL-014 | MUST | C1.2a | logic done (C1.2a) |
 | LIB-013 | MUST | C1.3c, C1.4, C6.1, C6.2 | partial (C1.3c: state file and repository; C1.4a: watched; Mode switch and CCLI flows later) |
 | CAT-010 | MUST | C1.3c, C2.4, C7.2 | partial (C1.3c: added on load, save refused without it; UI later) |
