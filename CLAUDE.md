@@ -33,6 +33,8 @@ dotnet test                      # all tests
 ./scripts/check.ps1              # build + test, as run before every commit
 ```
 
+Project slash commands live in `.claude/commands/` and are .NET versions of the user-level ones: `/verify` (format, warnings-as-errors build, tests, project rules), `/test`, `/simplify`, `/push`. Run `/verify` and `/simplify` before every code commit.
+
 ## Chunk routine (summary)
 
 Plan (fresh session, write `docs/plans/Cx.y.md`) → Execute (fresh session, test-first) → Verify (`/verify`, `/simplify`, update `docs/TRACEABILITY.md` and `docs/STATUS.md`) → Commit with the chunk ID and requirement IDs in the message.
