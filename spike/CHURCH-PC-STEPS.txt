@@ -13,8 +13,20 @@ BRING WITH YOU (on a USB stick)
     - the church's background images (JPG or PNG)
     - the church logo, renamed to logo.jpeg (or logo.png)
     - 3 to 6 of the church's songs as MP3 files
-- Headphones (or any second sound output) for the sound-device check
-- A few verses of a song typed in a Word document (for the paste check)
+- Headphones (for the sound-device check)
+
+
+BEFORE YOU GO (on your own PC, 5 minutes)
+-----------------------------------------
+The church PC has no Word, so do the Word paste check at home:
+1. Unzip ChurchSlides.Spike-r2r.zip into a folder on your PC and start
+   ChurchSlides.Spike.exe.
+2. On the "Rich text (S3)" tab, type a few verses of a song in Word,
+   select them, copy (Ctrl+C), click in the dashed box, and paste
+   (Ctrl+V). Repeat once for each choice in "Paste from other
+   programs". Read the note it shows each time.
+3. Write down which choice you prefer. You'll add it to check S3-1 at
+   the church.
 
 
 A. SET UP (5 minutes)
@@ -123,10 +135,12 @@ D3. "Rich text (S3)" tab
   The left box is the editor (you type in the dashed box). The right
   box shows how it will look on screen.
   1. Pick a sample from the list.
-  2. Open your Word document, select a few verses, and copy (Ctrl+C).
-     Click in the dashed box and paste (Ctrl+V). Repeat once for each
-     choice in "Paste from other programs". Read the note it shows
-     each time. Note which choice you prefer in S3-1.
+  2. Open a web browser and go to a page with song lyrics (a lyrics
+     site, or SongSelect if you use it). Select a few verses and copy
+     (Ctrl+C). Click in the dashed box and paste (Ctrl+V). Repeat once
+     for each choice in "Paste from other programs". Read the note it
+     shows each time. Answer S3-1: which choice you prefer for web
+     pages, plus the Word preference from "Before you go".
   3. Set "Token chips" to "Tagged run". Click in the text, press
      "Insert token" and pick one from its list. Move across the token
      with the arrow keys. Delete it with Backspace. Insert another and
@@ -159,6 +173,12 @@ D4. "Audio (S4)" tab
      ("Line 1", "Line 2", ...) where you tapped. Press Stop. Answer
      S4-3.
   4. Sound device change (have headphones ready):
+     First check there is something to switch to. Plug the headphones
+     into the headphone jack. If the sound moves to the headphones, or
+     Windows Settings > System > Sound now lists a second output
+     device, go on with a to c below. If nothing changes and only one
+     output device is listed, skip a to c: mark S4-4 Fail with the
+     note "no second sound output on this PC", and go on to step 5.
      a. Make sure neither box below the bar is ticked. Press Play.
         Plug in headphones, or open Windows Settings > System > Sound
         and choose a different output device. Note what happens to
