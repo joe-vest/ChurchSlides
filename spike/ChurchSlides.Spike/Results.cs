@@ -38,12 +38,14 @@ public sealed class Results
     public const string S1 = "S1 Output window";
     public const string S2 = "S2 Slides and crossfade";
     public const string S3 = "S3 Rich text";
+    public const string S4 = "S4 Audio";
+    public const string S4Devices = "S4 Device log";
     public const string S6 = "S6 Memory and decode";
     public const string S7 = "S7 Startup";
     public const string S8 = "S8 System";
 
     /// <summary>Section order in the results file. Later chunks add their sections here.</summary>
-    public static readonly string[] SectionOrder = [S8, S1, S2, S3, S6, S7];
+    public static readonly string[] SectionOrder = [S8, S1, S2, S3, S4, S4Devices, S6, S7];
 
     public static readonly CheckItem[] Checklist =
     [
@@ -64,6 +66,8 @@ public sealed class Results
         new("S3-4", S3, "Typing in the 200-word sample (or any long box) feels immediate on this PC."),
         new("S3-5", S3, "Drag this window to the Output monitor. With Flick, editor and renderer look the same on the projector."),
         new("S3-6", S3, "Ctrl+Z and Ctrl+Y undo and redo typing and formatting, and the caret goes back to where it was."),
+        new("S4-4", S4, "Audio tab: play a song, then change the default device in Windows Sound settings (or plug in headphones). Say what happened, and whether Resume on the new default device worked (the log shows it)."),
+        new("S4-5", S4, "Audio tab: clicking the position bar seeks and plays with no noticeable delay, with the output that the automatic run found best."),
         new("S7-1", S7, "Startup time is acceptable (see the Startup tab for cold and warm figures)."),
     ];
 

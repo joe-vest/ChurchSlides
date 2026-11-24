@@ -1,7 +1,7 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C0.3 done)
+Last updated: 2026-11-23 (C0.4a done)
 
 ## Chunks
 
@@ -10,7 +10,7 @@ Last updated: 2026-11-23 (C0.3 done)
 | C0.1 | Repository and documentation setup | done |
 | C0.2 | Spike A: output and crossfade (one combined spike program) | done: C0.2a shell (System S8, Output S1, Startup S7), C0.2b slides (Slides S2, Memory S6). Ready for G0 once C0.4 has added its tabs |
 | C0.3 | Spike B: rich text | done: C0.3a converter, renderer and automatic run, C0.3b chips, paste and undo (Rich text S3 tab). Development-PC figures and quirks below |
-| C0.4 | Spike C: audio and timer | todo |
+| C0.4 | Spike C: audio and timer | in progress: C0.4a audio measurements (Audio S4 tab, `--auto-s4`) done; C0.4b Cues, ear checks and timer next |
 | G0 | Owner runs the spike program on the church machine | blocked on C0.4 |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
@@ -73,6 +73,15 @@ Last updated: 2026-11-23 (C0.3 done)
 - C1.4a: the app (C2.2) must call `Monitor.Scan()` at startup, then start `FolderWatcher` and post `Updated` to the UI thread. `SystemClock` is the one allowed `DateTimeOffset.Now` in Domain.
 - Optional: add an `AssemblyInfo`/version stamp when packaging (C9.3).
 - Markdown lint warnings in docs (cosmetic).
+- For the G0 analysis and C4.1/C4.2 (C0.4a, development PC, NAudio 3.3.0; test MP3s made with ffmpeg, one LAME VBR with a Xing header and one CBR, 3 min, not church files). Owner, 2026-11-23: NAudio 3.3 rather than 2.x, and `WasapiPlayer` in place of the obsolete `WasapiOut` (see docs/plans/C0.4.md).
+  - Seeks: `Mp3FileReader` lands exactly (0.0 ms) on both files. `MediaFoundationReader` is exact on CBR but 4-427 ms off on the VBR file (mean 228 ms), in both directions. Seek-and-play with it then starts at the wrong place and its position runs 240-340 ms ahead of the sound. Unless the church files disagree, the product uses `Mp3FileReader` (S4-a).
+  - `Mp3FileReader` 3.3 quirk: after some seeks (1-2 in 12) a read made straight away returns zeros without moving, for about 50 ms of wall time, then the right audio. In playback this showed once as the output position running 23 ms ahead of the sound after a seek-and-play. C4.1 must guard against it (for example, prime the reader after a seek before handing it to the output) and the test should cover it.
+  - The two readers place the same sound 12-14 ms apart (opposite signs on the two files): Cues saved with one reader move by that much under the other (AUD-005). Pick one reader for good.
+  - Position: the output's `GetPosition` minus a fixed +1.1 ms (`Mp3FileReader`) or +6.4 ms (`MediaFoundationReader`) is within 0.1-0.3 ms at p95 and 1.8 ms at most, for WaveOut and both WasapiPlayer buffers (S4-b passes widely). The reader's `CurrentTime` runs 65-120 ms ahead (the buffers) and jitters up to 34 ms with WaveOut, so Cues must use the output position.
+  - Trim Start and Trim End within 0.2 ms (`Mp3FileReader`) and 5 ms (`MediaFoundationReader`) with every output. Seek-and-play 17-29 ms on average, 52 ms at most. Playing adds under 7 MB working set and under 0.5% CPU.
+  - WaveOut doesn't reset its played-sample count when the stream ends by itself (only `Stop` does). C4.1 must stop before replaying or count from the position at Play.
+  - NAudio 3.3 changes for C4.1: `WaveOutEvent` is now `WaveOut`, `WasapiOut` and `WasapiLoopbackCapture` are obsolete (`WasapiPlayer`, `WasapiRecorder`), `IMMNotificationClient` is internal (`MMDeviceEnumerator.CreateNotificationClient`), and `Mp3FileReader` opens without scanning the file (open about 0-14 ms).
+  - Device change (S4-d, S4-4) not yet tried: it needs a second output device. The Audio tab logs it at G0.
 - Spike (before G0): the self-contained publish ships the runtime pack the installed SDK knows (.NET 10.0.3 with SDK 10.0.103), older than the dev PC's runtime (10.0.15). Update the SDK before publishing for G0. The spike's "GPU driver" line reads the first display-adapter registry key only; fine on the church PC's single GPU.
 - For the G0 analysis (C0.2b, development PC at 3840×2160): placing a decoded background into an output-size bitmap costs far more than decoding it (about 120 ms against 7-28 ms), and UI-thread pre-render dropped about 2 frames per 300 ms crossfade against 0.6 on the render thread. If the church figures agree, C2.1 could draw the decoded background directly instead of rasterizing it, and pre-render on the render thread. The spike ignores EXIF orientation.
 - For the G0 analysis and C2.1/C2.3 (C0.3, development PC; `--auto-s3`). S3-a: all samples and 500 random documents round-trip unchanged with both chip designs; all scripted edits give the expected model. S3-e: unset properties stay unset. S3-b: every sample breaks lines the same except the long one, where the editor wraps one word early. The editor lays out about 5 px narrower than its box (probably the caret). Hymn lines with random word formatting: 12 of 100 break differently at the box width, 2 of 100 with the editor 5 px wider. Ink-pixel differences of 0.5-6.5% are edge smoothing only (the overlays match). S3-d: renderer 2.3 ms per slide on average, keystroke to next frame 27 ms on average (max 50-80 ms). A geometry outline (SLD-025) costs about 19 ms on average and up to 60 ms per slide.

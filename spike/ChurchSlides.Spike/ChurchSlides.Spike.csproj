@@ -24,4 +24,9 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Audio readers, outputs and loopback capture for S4 (C0.4 decision 1). Only the spike references it. -->
+    <PackageReference Include="NAudio" />
+  </ItemGroup>
+
 </Project>

@@ -111,6 +111,8 @@
 
       <TabItem x:Name="RichTextTab" Header="Rich text (S3)" />
 
+      <TabItem x:Name="AudioTab" Header="Audio (S4)" />
+
       <TabItem Header="Memory (S6)">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="8">

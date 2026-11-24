@@ -28,6 +28,9 @@ public static class Startup
 
     /// <summary>--auto-s3: only the rich-text run (S3), which needs no second monitor or media.</summary>
     public static bool AutoS3Requested { get; private set; }
+
+    /// <summary>--auto-s4: only the audio run (S4), which needs MP3s in the media folder but no second monitor.</summary>
+    public static bool AutoS4Requested { get; private set; }
     public static string? KestrelUrl { get; private set; }
 
     public static void MainEntered(string[] args)
@@ -38,6 +41,7 @@ public static class Startup
         KestrelRequested = args.Any(a => a.Equals("--kestrel", StringComparison.OrdinalIgnoreCase));
         AutoRequested = args.Any(a => a.Equals("--auto", StringComparison.OrdinalIgnoreCase));
         AutoS3Requested = args.Any(a => a.Equals("--auto-s3", StringComparison.OrdinalIgnoreCase));
+        AutoS4Requested = args.Any(a => a.Equals("--auto-s4", StringComparison.OrdinalIgnoreCase));
     }
 
     public static void StartKestrelIfRequested()

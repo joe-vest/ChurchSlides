@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer readout;
     private readonly RenderThread renderThread = new();
     private readonly RichTextPanel richText = new();
+    private readonly AudioPanel audio;
     private OutputTestWindow? pattern;
     private SlideSession? slides;
     private bool testRunning;
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        audio = new AudioPanel(log => results.SetFigures(Results.S4Devices, log));
 
         readout = new DispatcherTimer(Metrics.Interval, DispatcherPriority.Background, (_, _) => ShowMetrics(), Dispatcher);
         readout.Start();
@@ -36,6 +38,13 @@ public partial class MainWindow : Window
         richText.RunButton.Click += async (_, _) =>
         {
             await RunRichText();
+            TrySave();
+        };
+        AudioTab.Content = audio;
+        audio.ExtraPanel.Children.Add(new ChecklistPanel(results, Results.S4));
+        audio.RunButton.Click += async (_, _) =>
+        {
+            await RunAudio();
             TrySave();
         };
         FitBox.ItemsSource = Enum.GetValues<FitMode>();
@@ -55,6 +64,7 @@ public partial class MainWindow : Window
             pattern?.Close();
             slides?.Output.Close();
             renderThread.Dispose();
+            audio.Dispose();
             readout.Stop();
             metrics.Dispose();
             TrySave();
@@ -81,12 +91,14 @@ public partial class MainWindow : Window
         if (Startup.AutoRequested)
             _ = RunAutoThenClose();
         else if (Startup.AutoS3Requested)
-            _ = RunRichTextThenClose();
+            _ = RunThenClose(RunRichText);
+        else if (Startup.AutoS4Requested)
+            _ = RunThenClose(RunAudio);
     }
 
-    private async Task RunRichTextThenClose()
+    private async Task RunThenClose(Func<Task> run)
     {
-        await RunRichText();
+        await run();
         Close();
     }
 
@@ -179,6 +191,8 @@ public partial class MainWindow : Window
             await RunSlideTest(Results.S2, SlidesResultText, t => t.RunS2());
             TrySave();
             await RunRichText();
+            TrySave();
+            await RunAudio();
 
             var path = TrySave();
             AutoStatusText.Text = path is null ? "Done, but the results couldn't be saved." : $"Done. Saved {Path.GetFileName(path)}.";
@@ -365,6 +379,34 @@ public partial class MainWindow : Window
         }
     }
 
+    // ---- Audio (S4) ----
+
+    /// <summary>Runs the S4 automatic run on the Audio tab and records its figures.</summary>
+    private async Task RunAudio()
+    {
+        if (testRunning)
+            return;
+        testRunning = true;
+        audio.RunButton.IsEnabled = false;
+        audio.StopManual();
+        var previous = Tabs.SelectedItem;
+        Tabs.SelectedItem = AudioTab;
+        try
+        {
+            var files = AudioFiles.Scan(results.State.MediaFolder);
+            var figures = await new AudioTests(files, metrics, s => AutoStatusText.Text = s).Run();
+            results.SetFigures(Results.S4, figures);
+            audio.ResultText.Text = string.Join(Environment.NewLine, figures.Select(f => $"{f.Name}: {f.Value}"));
+            AutoStatusText.Text = $"{Results.S4}: done.";
+        }
+        finally
+        {
+            Tabs.SelectedItem = previous;
+            testRunning = false;
+            audio.RunButton.IsEnabled = true;
+        }
+    }
+
     // ---- Results ----
 
     private void Save_Click(object sender, RoutedEventArgs e)
@@ -411,6 +453,7 @@ public partial class MainWindow : Window
     {
         MediaFolderText.Text = results.State.MediaFolder is { } folder ? $"Media: {folder}" : "Media: not chosen";
         LoadBackgrounds();
+        audio.SetFolder(results.State.MediaFolder);
         richText.SetBackground(Media.Scan(results.State.MediaFolder).Backgrounds.FirstOrDefault());
     }
 
