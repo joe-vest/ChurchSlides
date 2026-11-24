@@ -47,7 +47,7 @@ Last updated: 2026-11-24 (C0.4b done)
   - CCLI: Cancel doesn't stop a close or exit. Crash safety net on startup (CCLI-018).
   - The review's file-shape changes amend schema version 1 in place, with no migration, because no real Library exists yet. An exception to the schema policy above, for C1.3c only.
 - Owner, 2026-11-23: trim (AUD-003) is a nice-to-have. If spike S4 shows Trim Start can't seek accurately on the church's MP3s (all VBR), drop Trim Start at G0, and drop Trim End too if it turns out hard. The FRD stays unchanged until G0 decides. Seek accuracy still matters for the cue editor's click-to-seek (C4.2), where it is less critical because it isn't live.
-- Owner, 2026-11-24: Timer display drops leading zero parts: `h:mm:ss` while there are hours, then `mm:ss`, `m:ss` below 10 minutes, `:ss` below a minute, with the minus in front when negative (`-:05`). Digits keep their places (right-aligned in the fixed cells). Replaces TMR-009's `h:mm:ss` default. The spike shows it. The FRD (TMR-009) is not yet amended.
+- Owner, 2026-11-24: Timer display drops leading zero parts: `h:mm:ss` while there are hours, then `mm:ss`, `m:ss` below 10 minutes, `:ss` below a minute, with the minus in front when negative (`-:05`). Digits keep their places (right-aligned in the fixed cells). Replaces TMR-009's `h:mm:ss` default. The spike shows it. FRD amended (TMR-009, TMR-005 example, TMR-015; section 26).
 
 ## Open FRD questions
 

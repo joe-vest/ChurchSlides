@@ -1,7 +1,7 @@
 # Functional Requirements: Church Presentation App
 
 Version: 0.3 (draft)
-Date: 2026-11-23
+Date: 2026-11-24
 Changes since 0.1: see Section 26. Product name is ChurchSlides.
 Status: Functional requirements only. UI layout, visual design, and detailed technical design are deliberately not covered here.
 
@@ -442,17 +442,17 @@ Library/
 | TMR-002 | MUST | Timer types: **Countdown to clock time** (target time of day, such as 10:00) and **Countdown duration** (for example 5:00). |
 | TMR-003 | MUST | Timer states: Stopped, Running, Expired. |
 | TMR-004 | MUST | Once started, a Timer keeps running regardless of which slide is displayed or whether it's visible. Several slides showing the same Timer show the same value. |
-| TMR-005 | MUST | End behavior per Timer: **Hold at zero**, or **Continue negative** (displayed with a leading minus, for example `-0:01:23`). |
+| TMR-005 | MUST | End behavior per Timer: **Hold at zero**, or **Continue negative** (displayed with a leading minus, for example `-1:23`). |
 | TMR-006 | MUST | Warning: one threshold in seconds and one warning color per Timer. When remaining time is at or below the threshold, the Timer's text shows in the warning color. Above the threshold it uses the text's own formatting. Only one threshold is supported. A Timer with no warning color doesn't change color. New Timers created in the UI default to red. |
 | TMR-007 | MUST | When a Running Timer reaches zero, it changes to Expired and fires its `TimerExpired` trigger **exactly once** per start, whatever the end behavior. |
 | TMR-008 | MUST | If a Countdown-to-clock-time Timer is started after its target time has already passed today, it goes straight to Expired, shows zero (or negative, under Continue negative), and **doesn't** fire its trigger. |
-| TMR-009 | MUST | A slide shows a Timer with a token such as `{{timer:ServiceStart}}` inside a Text Box. The default display format is `h:mm:ss`. The token stands alone in its Text Box. It isn't embedded in running text. The editor only inserts Timer tokens on their own. A Timer token found next to other text (for example from a paste or an import) is reported as a problem and flagged by the pre-service check. |
+| TMR-009 | MUST | A slide shows a Timer with a token such as `{{timer:ServiceStart}}` inside a Text Box. The default display format drops leading zero parts: `h:mm:ss` while there are hours (`1:05:09`), then `mm:ss` (`12:00`), `m:ss` below ten minutes (`9:59`), and `:ss` below one minute (`:59`). A negative value keeps the same form after its minus sign (TMR-005). As the leading parts drop away, the remaining digits keep their places on the slide (TMR-010). The token stands alone in its Text Box. It isn't embedded in running text. The editor only inserts Timer tokens on their own. A Timer token found next to other text (for example from a paste or an import) is reported as a problem and flagged by the pre-service check. |
 | TMR-010 | MUST | Timer display is smooth: digits use fixed-width (tabular) figures, or the timer run is laid out at a fixed width, so the text around it doesn't shift. Only the timer's text is updated each tick. The slide isn't re-rendered, and transitions don't apply to timer ticks. |
 | TMR-011 | MUST | Timers tick on whole seconds, tied to the system clock (not an accumulating interval timer), so they don't drift. |
 | TMR-012 | MUST | Commands: Start Timer (name) and Stop Timer (name). Stop returns the Timer to Stopped and resets it. Starting a Running Timer does nothing. Starting an Expired Timer restarts it, the same as Stop followed by Start (TMR-008 still applies to clock-time Timers). |
 | TMR-013 | MUST | `AutoStartOnDisplay` per Timer (default on): displaying a slide that shows a Stopped Timer starts it. |
 | TMR-014 | MUST | A Stopped Timer shows its full duration (duration type) or the live remaining time to target (clock type). |
-| TMR-015 | COULD | Display format options (for example `m:ss`, `mm:ss`, hide hours when zero). |
+| TMR-015 | COULD | Display format options other than the TMR-009 default (for example always `h:mm:ss`, or always `mm:ss`). |
 | TMR-016 | MUST | Timers behave the same in Rehearse and Live modes. |
 | TMR-017 | MUST | Timer state is not saved. Stopping presentation resets every Timer to Stopped. Reopening a Service, or restoring after a crash (SAFE-005), starts with all Timers Stopped. Clock-time Timers show the correct remaining time anyway (TMR-014). |
 
@@ -830,3 +830,4 @@ End-to-end scenarios the finished app must pass. Use them as integration tests.
   - CCLI: CCLI-010 Cancel doesn't stop the close, CCLI-018 crash safety net. Q-008 resolved by CCLI-002.
   - CHK-001: more checks. "Placeholder" now means only the Service Item kind (VAR-003, LIB-011 reworded). New open questions Q-011 and Q-012.
 - Plan review (2026-11-23): the Service state file moves to its own folder `service-state/` (LIB-013). TMR-009: Timer tokens not standing alone are reported. TMR-006: no warning color means no change, new Timers default to red.
+- Owner, 2026-11-24 (during C0.4b): TMR-009's default Timer format drops leading zero parts (`1:05:09`, `12:00`, `9:59`, `:59`), with digits keeping their places. TMR-005 example and TMR-015 options updated to match.
