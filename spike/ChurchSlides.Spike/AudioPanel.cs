@@ -40,14 +40,27 @@ public sealed class AudioPanel : DockPanel, IDisposable
     private readonly DeviceWatch devices = new();
     private readonly DispatcherTimer readout;
     private readonly Action<IReadOnlyList<Figure>> onLog;
+    private readonly Func<MonitorInfo?> outputMonitor;
+    private readonly TextBlock earText = new() { Margin = new Thickness(0, 4, 0, 0), TextWrapping = TextWrapping.Wrap };
+    private readonly DispatcherTimer flashOff;
+    private readonly List<double> taps = [];
     private SpikePlayer? player;
+    private string? playerLabel;
     private double lastPosition;
     private double lastErrorAt = double.NegativeInfinity;
+    private CuePoller? poller;
+    private CueWindow? cueWindow;
+    private bool tapping;
+    private double tapStart;
 
-    public AudioPanel(Action<IReadOnlyList<Figure>> onLog)
+    /// <param name="outputMonitor">The monitor the Output tab has chosen, for the ear checks.</param>
+    public AudioPanel(Action<IReadOnlyList<Figure>> onLog, Func<MonitorInfo?> outputMonitor)
     {
         this.onLog = onLog;
+        this.outputMonitor = outputMonitor;
         Margin = new Thickness(8);
+        flashOff = new DispatcherTimer(TimeSpan.FromMilliseconds(120), DispatcherPriority.Normal, (_, _) => EndFlash(), Dispatcher);
+        flashOff.Stop();
 
         RunButton = new Button { Content = "Run audio test", Padding = new Thickness(10, 4, 10, 4) };
         var runRow = Row(RunButton, new TextBlock
@@ -59,7 +72,11 @@ public sealed class AudioPanel : DockPanel, IDisposable
         });
 
         var play = Button("Play", async () => await PlayFrom(TrimStart));
-        var stop = Button("Stop", async () => await (player?.StopAsync() ?? Task.CompletedTask));
+        var stop = Button("Stop", async () =>
+        {
+            StopCues();
+            await (player?.StopAsync() ?? Task.CompletedTask);
+        });
         var restart = Button("Restart", async () => await PlayFrom(TrimStart));
         var pickers = Row(
             new TextBlock { Text = "File:", VerticalAlignment = VerticalAlignment.Center }, fileBox,
@@ -79,6 +96,21 @@ public sealed class AudioPanel : DockPanel, IDisposable
                 await PlayFrom(e.GetPosition(bar).X / bar.ActualWidth * p.Length.TotalSeconds);
         };
 
+        var ears = Row(
+            new TextBlock { Text = "Ear checks:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) },
+            Button("Sync: play clicks", Sync),
+            Button("Tap: record", TapRecord),
+            Button("Tap: play back", TapPlayBack));
+        ears.Margin = new Thickness(0, 12, 0, 0);
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Space && tapping)
+            {
+                Tap();
+                e.Handled = true;
+            }
+        };
+
         foreach (var box in new[] { fileBox, readerBox, outputBox })
             box.SelectionChanged += (_, _) => DropPlayer();
         devices.Changed += OnDeviceEvent;
@@ -91,6 +123,14 @@ public sealed class AudioPanel : DockPanel, IDisposable
             Children =
             {
                 runRow, pickers, controls, positionText, bar,
+                ears,
+                new TextBlock
+                {
+                    Margin = new Thickness(0, 4, 0, 0),
+                    TextWrapping = TextWrapping.Wrap,
+                    Text = "Both use the Output monitor (Output tab) and the output picked above. Sync (S4-2): clicks every second, and the Output flashes white on each click through a Cue; they should be together. Tap (S4-3): pick a song, press Tap: record, press Space at the start of each line, then Stop. Tap: play back plays it again from Trim Start and the Output changes at each tap. Esc on the Output or Stop ends either.",
+                },
+                earText,
                 new TextBlock
                 {
                     Margin = new Thickness(0, 12, 0, 0),
@@ -165,6 +205,7 @@ public sealed class AudioPanel : DockPanel, IDisposable
         {
             player = new SpikePlayer(path, new AudioCombo((ReaderKind)readerBox.SelectedItem, (OutputKind)outputBox.SelectedIndex), followBox.IsChecked == true);
             player.Stopped += OnStopped;
+            playerLabel = player.Combo.ToString();
             return player;
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or NAudio.MmException or IOException)
@@ -176,8 +217,124 @@ public sealed class AudioPanel : DockPanel, IDisposable
 
     private void DropPlayer()
     {
+        StopCues();
         player?.Dispose();
         player = null;
+    }
+
+    // ---- Ear checks (S4-2 Sync, S4-3 Tap) ----
+
+    /// <summary>Sync: a click every second, and a Cue on each click flashes the Output white.</summary>
+    private async Task Sync()
+    {
+        DropPlayer();
+        if (OpenCueWindow() is not { } window)
+            return;
+        var clicks = new ClickTrack(TimeSpan.FromMinutes(2));
+        var combo = new AudioCombo(ReaderKind.Mp3FileReader, (OutputKind)outputBox.SelectedIndex);
+        try
+        {
+            player = new SpikePlayer(clicks, combo, followBox.IsChecked == true);
+        }
+        catch (Exception ex) when (ex is COMException or InvalidOperationException or NAudio.MmException)
+        {
+            Log($"Open failed: {ex.GetType().Name}: {ex.Message}");
+            StopCues();
+            return;
+        }
+        player.Stopped += OnStopped;
+        playerLabel = $"Click track + {AudioCombo.Label(combo.Output)}";
+        window.Set(Brushes.Black, "");
+        await PlayFrom(0);
+        earText.Text = $"Sync: a click every second, the Output flashes white with each. {CueOffsets.Describe(combo)}.";
+        StartCues(player, combo, clicks.Clicks, (_, _) =>
+        {
+            window.Set(Brushes.White, "");
+            flashOff.Stop();
+            flashOff.Start();
+        });
+    }
+
+    private void EndFlash()
+    {
+        flashOff.Stop();
+        cueWindow?.Set(Brushes.Black, "");
+    }
+
+    /// <summary>Tap: plays the picked song from Trim Start; Space records a Cue at the position (AUD-008).</summary>
+    private async Task TapRecord()
+    {
+        StopCues();
+        if (Player() is null)
+            return;
+        taps.Clear();
+        tapStart = TrimStart;
+        tapping = true;
+        earText.Text = "Tapping: press Space at the start of each line, then Stop.";
+        await PlayFrom(tapStart);
+    }
+
+    private void Tap()
+    {
+        if (player is not { IsPlaying: true } p)
+            return;
+        taps.Add(p.SafeSeconds() - CueOffsets.Ms(p.Combo) / 1000);
+        earText.Text = $"Tapping: {taps.Count} taps, the last at {SpikePlayer.Clock(taps[^1])}. Stop when done, then Tap: play back.";
+    }
+
+    /// <summary>Plays the song again from where tapping started; each tap is a Cue that changes the Output.</summary>
+    private async Task TapPlayBack()
+    {
+        StopCues();
+        var cues = taps.Where(t => t >= tapStart).Order().ToList();
+        if (cues.Count == 0)
+        {
+            earText.Text = "No taps yet: press Tap: record first.";
+            return;
+        }
+        if (Player() is not { } p || OpenCueWindow() is not { } window)
+            return;
+        window.Set(Brushes.Black, "Waiting for the first tap");
+        await PlayFrom(tapStart);
+        earText.Text = $"Playing back {cues.Count} taps from {SpikePlayer.Clock(tapStart)}. {CueOffsets.Describe(p.Combo)}.";
+        Brush[] colors = [Brushes.DarkSlateBlue, Brushes.DarkGreen, Brushes.DarkRed];
+        StartCues(p, p.Combo, cues, (i, _) => window.Set(colors[i % colors.Length], $"Line {i + 1}"));
+    }
+
+    private CueWindow? OpenCueWindow()
+    {
+        if (outputMonitor() is not { } monitor)
+        {
+            earText.Text = "No monitor: pick one on the Output tab.";
+            return null;
+        }
+        var window = new CueWindow(monitor);
+        window.Closed += (_, _) =>
+        {
+            if (cueWindow == window)
+                StopCues();
+        };
+        cueWindow = window;
+        window.ShowTimed();
+        return window;
+    }
+
+    private void StartCues(SpikePlayer p, AudioCombo combo, IReadOnlyList<double> cues, Action<int, double> fire)
+    {
+        var offset = CueOffsets.Ms(combo) / 1000;
+        poller = new CuePoller(() => p.OutputSeconds - offset, cues, fire);
+    }
+
+    /// <summary>Ends tapping, the poller and the Cue window.</summary>
+    private void StopCues()
+    {
+        tapping = false;
+        poller?.Dispose();
+        poller = null;
+        flashOff.Stop();
+        var window = cueWindow;
+        cueWindow = null;
+        window?.Close();
     }
 
     private void OnStopped(Exception? error)
@@ -218,7 +375,7 @@ public sealed class AudioPanel : DockPanel, IDisposable
         var length = p.Length.TotalSeconds;
         if (p.IsPlaying)
             lastPosition = p.SafeSeconds();
-        positionText.Text = $"{SpikePlayer.Clock(lastPosition)} / {SpikePlayer.Clock(length)}   {p.Combo}{(p.FollowDefault ? ", following the default device" : "")}";
+        positionText.Text = $"{SpikePlayer.Clock(lastPosition)} / {SpikePlayer.Clock(length)}   {playerLabel}{(p.FollowDefault ? ", following the default device" : "")}";
         barFill.Width = length > 0 ? Math.Clamp(lastPosition / length, 0, 1) * bar.ActualWidth : 0;
     }
 

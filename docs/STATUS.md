@@ -1,7 +1,7 @@
 # Status
 
 Product: ChurchSlides. Current milestone: **M0 Foundations**.
-Last updated: 2026-11-23 (C0.4a done)
+Last updated: 2026-11-24 (C0.4b done)
 
 ## Chunks
 
@@ -10,8 +10,8 @@ Last updated: 2026-11-23 (C0.4a done)
 | C0.1 | Repository and documentation setup | done |
 | C0.2 | Spike A: output and crossfade (one combined spike program) | done: C0.2a shell (System S8, Output S1, Startup S7), C0.2b slides (Slides S2, Memory S6). Ready for G0 once C0.4 has added its tabs |
 | C0.3 | Spike B: rich text | done: C0.3a converter, renderer and automatic run, C0.3b chips, paste and undo (Rich text S3 tab). Development-PC figures and quirks below |
-| C0.4 | Spike C: audio and timer | in progress: C0.4a audio measurements (Audio S4 tab, `--auto-s4`) done; C0.4b Cues, ear checks and timer next |
-| G0 | Owner runs the spike program on the church machine | blocked on C0.4 |
+| C0.4 | Spike C: audio and timer | done: C0.4a audio measurements (Audio S4 tab, `--auto-s4`), C0.4b Cues, Sync and Tap ear checks, Timer S5 tab (`--auto-s5`). Development-PC figures below |
+| G0 | Owner runs the spike program on the church machine | ready (all spike tabs in; update the SDK before publishing, see Follow-ups) |
 | C1.1 | Domain model and serialization | done (64 tests; see deviations in docs/plans/C1.1.md) |
 | C1.2 | Resolution logic (review gate), split C1.2a slide resolution / C1.2b copy rules | done: C1.2a slide resolution, C1.2b copy and skip rules (263 domain tests, see docs/plans/C1.2.md) |
 | C1.3 | Storage foundation | done: C1.3a Library files, C1.3b local data and drafts (61 storage tests, see docs/plans/C1.3.md) |
@@ -47,6 +47,7 @@ Last updated: 2026-11-23 (C0.4a done)
   - CCLI: Cancel doesn't stop a close or exit. Crash safety net on startup (CCLI-018).
   - The review's file-shape changes amend schema version 1 in place, with no migration, because no real Library exists yet. An exception to the schema policy above, for C1.3c only.
 - Owner, 2026-11-23: trim (AUD-003) is a nice-to-have. If spike S4 shows Trim Start can't seek accurately on the church's MP3s (all VBR), drop Trim Start at G0, and drop Trim End too if it turns out hard. The FRD stays unchanged until G0 decides. Seek accuracy still matters for the cue editor's click-to-seek (C4.2), where it is less critical because it isn't live.
+- Owner, 2026-11-24: Timer display drops leading zero parts: `h:mm:ss` while there are hours, then `mm:ss`, `m:ss` below 10 minutes, `:ss` below a minute, with the minus in front when negative (`-:05`). Digits keep their places (right-aligned in the fixed cells). Replaces TMR-009's `h:mm:ss` default. The spike shows it. The FRD (TMR-009) is not yet amended.
 
 ## Open FRD questions
 
@@ -82,6 +83,16 @@ Last updated: 2026-11-23 (C0.4a done)
   - WaveOut doesn't reset its played-sample count when the stream ends by itself (only `Stop` does). C4.1 must stop before replaying or count from the position at Play.
   - NAudio 3.3 changes for C4.1: `WaveOutEvent` is now `WaveOut`, `WasapiOut` and `WasapiLoopbackCapture` are obsolete (`WasapiPlayer`, `WasapiRecorder`), `IMMNotificationClient` is internal (`MMDeviceEnumerator.CreateNotificationClient`), and `Mp3FileReader` opens without scanning the file (open about 0-14 ms).
   - Device change (S4-d, S4-4) not yet tried: it needs a second output device. The Audio tab logs it at G0.
+- For the G0 analysis and C4.1/C2.1 (C0.4b Cues, development PC, Output 3840×2160, `Mp3FileReader` + WasapiPlayer 100 ms, offset +1.1 ms). Each run: 20 Cues 2 s apart, a slide pre-rendered every 500 ms from a fresh factory (about 170 ms each at 4K: background decode and placing, the costly case).
+  - Cue heard to slide shown (upper bound), p95: UI-thread pre-render 168 ms (default timer) and 175 ms (1 ms timer), FAIL. Render-thread pre-render 38 ms (default) and 36 ms (1 ms), pass (S4-c). On the UI thread a Cue that lands during a render waits for it (poller to UI thread up to 180 ms). An earlier run with `MediaFoundationReader` had UI thread + 1 ms pass by luck (no Cue hit a render). If the church agrees, ARCH 4.1's render thread is required.
+  - The poller's 10 ms sleep takes 15.6 ms at the default timer resolution, 10.6 ms with `timeBeginPeriod(1)`; heard-to-poller p95 14-16 ms against 10 ms. Both pass with the render thread; the 1 ms setting buys about 5 ms.
+  - UI thread to the frame after the change: 20-27 ms on average. Cue posting at Normal priority costs under 2 ms when the UI thread is free.
+  - The Cue run's "best combination" is picked only among readers that passed S4-a (otherwise `MediaFoundationReader` can tie on position and win).
+- For the G0 analysis and C5.1/C2.1 (C0.4b Timer, same PC, Segoe UI 346 px, 12 min, crossfades every 15 s in the second half): no second skipped or doubled, whole second to frame p95 15 ms without fades, 33 ms with (S5-a pass). Slot redraw avg 0.7 ms, p95 1.1 ms, max 3.7 ms (one outlier; S5-b asks under 2). CPU 0.2%. A plain 1 s `DispatcherTimer` fell 50 ms behind in 12 minutes.
+  - C5.1: `DispatcherTimer` woke 2-8 ms *before* its due time on 48 of 721 ticks. A tick loop that takes the value from the time it wakes shows a value twice (66 doubles in the first run). `TimerService` must wait out an early wake, or compute from the due second.
+  - Crossfades drop more frames the longer since the last fade, with or without the timer slot: fades 0.6 s apart (S2) 0.32 per fade, 1 s apart 0.27, 4 s apart 1.85, 15 s apart 4.3-9. S2's figure is optimistic for real services, where fades come seconds apart. Cause not found (GPU clocking down between fades, or the 4K bitmaps re-uploaded each fade). For G0: compare the church PC's S2 and S5 fade figures. For C2.1: try keeping the next slide's layers resident (shown at opacity 0) before deciding on Cut-only.
+  - Digit advance spread at 346 px: Segoe UI 60 px, Georgia 73 px, other common fonts 0 (tabular). The fixed cells matter for Segoe UI, the likely default.
+  - Found while running: device notifications came on a thread-pool thread because the Audio tab is built before `Application.Run`, which crashed the C0.4a device log. Fixed in the spike. C4.1 must marshal them to the UI thread explicitly.
 - Spike (before G0): the self-contained publish ships the runtime pack the installed SDK knows (.NET 10.0.3 with SDK 10.0.103), older than the dev PC's runtime (10.0.15). Update the SDK before publishing for G0. The spike's "GPU driver" line reads the first display-adapter registry key only; fine on the church PC's single GPU.
 - For the G0 analysis (C0.2b, development PC at 3840×2160): placing a decoded background into an output-size bitmap costs far more than decoding it (about 120 ms against 7-28 ms), and UI-thread pre-render dropped about 2 frames per 300 ms crossfade against 0.6 on the render thread. If the church figures agree, C2.1 could draw the decoded background directly instead of rasterizing it, and pre-render on the render thread. The spike ignores EXIF orientation.
 - For the G0 analysis and C2.1/C2.3 (C0.3, development PC; `--auto-s3`). S3-a: all samples and 500 random documents round-trip unchanged with both chip designs; all scripted edits give the expected model. S3-e: unset properties stay unset. S3-b: every sample breaks lines the same except the long one, where the editor wraps one word early. The editor lays out about 5 px narrower than its box (probably the caret). Hymn lines with random word formatting: 12 of 100 break differently at the box width, 2 of 100 with the editor 5 px wider. Ink-pixel differences of 0.5-6.5% are edge smoothing only (the overlays match). S3-d: renderer 2.3 ms per slide on average, keystroke to next frame 27 ms on average (max 50-80 ms). A geometry outline (SLD-025) costs about 19 ms on average and up to 60 ms per slide.

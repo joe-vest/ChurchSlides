@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly RenderThread renderThread = new();
     private readonly RichTextPanel richText = new();
     private readonly AudioPanel audio;
+    private readonly TimerPanel timer = new();
     private OutputTestWindow? pattern;
     private SlideSession? slides;
     private bool testRunning;
@@ -25,7 +26,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        audio = new AudioPanel(log => results.SetFigures(Results.S4Devices, log));
+        audio = new AudioPanel(log => results.SetFigures(Results.S4Devices, log), () => MonitorBox.SelectedItem as MonitorInfo);
 
         readout = new DispatcherTimer(Metrics.Interval, DispatcherPriority.Background, (_, _) => ShowMetrics(), Dispatcher);
         readout.Start();
@@ -45,6 +46,13 @@ public partial class MainWindow : Window
         audio.RunButton.Click += async (_, _) =>
         {
             await RunAudio();
+            TrySave();
+        };
+        TimerTab.Content = timer;
+        timer.ExtraPanel.Children.Add(new ChecklistPanel(results, Results.S5));
+        timer.RunButton.Click += async (_, _) =>
+        {
+            await RunTimer();
             TrySave();
         };
         FitBox.ItemsSource = Enum.GetValues<FitMode>();
@@ -94,6 +102,8 @@ public partial class MainWindow : Window
             _ = RunThenClose(RunRichText);
         else if (Startup.AutoS4Requested)
             _ = RunThenClose(RunAudio);
+        else if (Startup.AutoS5Requested)
+            _ = RunThenClose(RunTimer);
     }
 
     private async Task RunThenClose(Func<Task> run)
@@ -193,6 +203,8 @@ public partial class MainWindow : Window
             await RunRichText();
             TrySave();
             await RunAudio();
+            TrySave();
+            await RunTimer();
 
             var path = TrySave();
             AutoStatusText.Text = path is null ? "Done, but the results couldn't be saved." : $"Done. Saved {Path.GetFileName(path)}.";
@@ -396,7 +408,10 @@ public partial class MainWindow : Window
             var files = AudioFiles.Scan(results.State.MediaFolder);
             var figures = await new AudioTests(files, metrics, s => AutoStatusText.Text = s).Run();
             results.SetFigures(Results.S4, figures);
-            audio.ResultText.Text = string.Join(Environment.NewLine, figures.Select(f => $"{f.Name}: {f.Value}"));
+            TrySave();
+            var cues = await RunCues(files);
+            results.SetFigures(Results.S4Cues, cues);
+            audio.ResultText.Text = string.Join(Environment.NewLine, figures.Concat(cues).Select(f => $"{f.Name}: {f.Value}"));
             AutoStatusText.Text = $"{Results.S4}: done.";
         }
         finally
@@ -404,6 +419,58 @@ public partial class MainWindow : Window
             Tabs.SelectedItem = previous;
             testRunning = false;
             audio.RunButton.IsEnabled = true;
+        }
+    }
+
+    /// <summary>The Cue run (S4-c) on the Output monitor, with the first VBR song.</summary>
+    private async Task<List<Figure>> RunCues(IReadOnlyList<string> files)
+    {
+        var media = Media.Scan(results.State.MediaFolder);
+        var problem = files.Count == 0 ? "no MP3 files in the media folder"
+            : MonitorBox.SelectedItem is not MonitorInfo ? "no monitor found"
+            : media.Backgrounds.Count == 0 ? "no backgrounds: choose the media folder (top right)"
+            : null;
+        if (problem is not null)
+            return [new Figure("Not run", problem)];
+        pattern?.Close();
+        slides?.Output.Close();
+        var song = await Task.Run(() => files.FirstOrDefault(f => AudioFiles.Inspect(f).Vbr) ?? files[0]);
+        return await new CueTest((MonitorInfo)MonitorBox.SelectedItem, media, song, renderThread, s => AutoStatusText.Text = s).Run();
+    }
+
+    // ---- Timer (S5) ----
+
+    /// <summary>Runs the S5 timer run on the Output monitor with the Timer tab's settings and records its figures.</summary>
+    private async Task RunTimer()
+    {
+        if (testRunning)
+            return;
+        if (MonitorBox.SelectedItem is not MonitorInfo monitor)
+        {
+            results.SetFigures(Results.S5, [new Figure("Not run", "no monitor found")]);
+            return;
+        }
+        testRunning = true;
+        timer.RunButton.IsEnabled = false;
+        pattern?.Close();
+        slides?.Output.Close();
+        var previous = Tabs.SelectedItem;
+        Tabs.SelectedItem = TimerTab;
+        try
+        {
+            var s2 = results.State.Sections.GetValueOrDefault(Results.S2)?.Figures
+                .FirstOrDefault(f => f.Name.Contains("render thread: frames per fade", StringComparison.Ordinal))?.Value;
+            var test = new TimerTest(monitor, Media.Scan(results.State.MediaFolder), metrics, timer.Settings(), s2, s => AutoStatusText.Text = s);
+            var figures = await test.Run();
+            results.SetFigures(Results.S5, figures);
+            timer.ResultText.Text = string.Join(Environment.NewLine, figures.Select(f => $"{f.Name}: {f.Value}"));
+            AutoStatusText.Text = $"{Results.S5}: done.";
+        }
+        finally
+        {
+            Tabs.SelectedItem = previous;
+            testRunning = false;
+            timer.RunButton.IsEnabled = true;
         }
     }
 

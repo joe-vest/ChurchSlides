@@ -14,7 +14,6 @@ public sealed class AudioTests(IReadOnlyList<string> files, Metrics metrics, Act
 {
     private const double ProbeSeconds = 0.5;
     private const double SearchSeconds = 1.0;
-    private const double HopSeconds = 0.25;
     private const double PlaySeconds = 20;
     private const int SeekPlays = 5;
     private const int RandomSeeks = 7;
@@ -78,6 +77,9 @@ public sealed class AudioTests(IReadOnlyList<string> files, Metrics metrics, Act
             }
         }
         figures.AddRange(PlaybackVerdicts(runs));
+        CueOffsets.Record(
+            runs.Select(r => (r.Combo, r.OutputOffsetMs, r.OutputResidual)),
+            worstSeekMs.Where(w => w.Value <= SeekPassMs).Select(w => w.Key).ToHashSet());
         return figures;
     }
 
@@ -204,9 +206,6 @@ public sealed class AudioTests(IReadOnlyList<string> files, Metrics metrics, Act
 
     private readonly record struct PositionSample(double At, double Output, double Reader);
 
-    /// <summary>A heard moment: loopback sample index and the file time heard there.</summary>
-    private readonly record struct Heard(int Index, double FileSeconds);
-
     private async Task<PlaybackRun> Playback(string song, AudioCombo combo)
     {
         var label = combo.ToString();
@@ -291,30 +290,11 @@ public sealed class AudioTests(IReadOnlyList<string> files, Metrics metrics, Act
         // Start: the file time of the first sound heard.
         var first = Correlation.Find(rec.Samples.AsSpan(onset, window), reference.Samples, Reference.Index(trimStart - SearchSeconds), Reference.Index(trimStart + SearchSeconds));
 
-        // The heard timeline: a window every 0.25 s, each searched near where the last one says it should be.
-        var heard = new List<Heard>();
-        var steps = 0;
-        var expected = Reference.ToSeconds(first.Index);
-        var prev = onset;
-        var windows = 0;
-        for (var i = onset; i + window <= offset; i += Reference.Index(HopSeconds))
-        {
-            windows++;
-            var guess = expected + Reference.ToSeconds(i - prev);
-            var m = Correlation.Find(rec.Samples.AsSpan(i, window), reference.Samples, Reference.Index(guess - 0.1), Reference.Index(guess + 0.1));
-            if (!m.IsTrusted)
-                continue;
-            var at = Reference.ToSeconds(m.Index);
-            if (heard.Count > 0 && Math.Abs(at - guess) > 0.005)
-                steps++;
-            heard.Add(new Heard(i, at));
-            expected = at;
-            prev = i;
-        }
+        var heard = HeardTimeline.Build(rec, reference, onset, offset, Reference.ToSeconds(first.Index), window);
         // End: the last 0.5 s heard, searched near where the timeline says it is (a wide search can
         // land on a repeat in the music), so its end is the file time of the last sound.
         var lastFrom = offset + 1 - window;
-        var lastGuess = HeardAt(rec, heard, rec.TimeOf(lastFrom));
+        var lastGuess = heard.FileSecondsAt(rec.TimeOf(lastFrom));
         var last = double.IsNaN(lastGuess) ? new Match(double.NaN, 0)
             : Correlation.Find(rec.Samples.AsSpan(lastFrom, window), reference.Samples, Reference.Index(lastGuess - 0.1), Reference.Index(lastGuess + 0.1));
         var firstHeardMs = (Reference.ToSeconds(first.Index) - trimStart) * 1000;
@@ -323,12 +303,12 @@ public sealed class AudioTests(IReadOnlyList<string> files, Metrics metrics, Act
             $"first sound {(rec.TimeOf(onset) - playAt) * 1000:F0} ms after Play; first heard {firstHeardMs.ToString(Signed, C)} ms from Trim Start{Unsure(first)}; " +
             $"last heard {lastHeardMs.ToString(Signed, C)} ms from Trim End{Unsure(last)}; stop event {(stoppedAt - rec.TimeOf(offset)) * 1000:F0} ms after the last sound")));
         figures.Add(new($"{label}: heard timeline", string.Create(C,
-            $"{heard.Count} of {windows} windows matched; jumps over 5 ms (dropouts or glitches): {steps}; loopback {rec.Packets} packets, {rec.Gaps} gaps, {rec.BadStamps} without a timestamp, device clock against QPC within {rec.ClockSpreadMs:F1} ms")));
+            $"{heard.Count} of {heard.Windows} windows matched; jumps over 5 ms (dropouts or glitches): {heard.Steps}; loopback {rec.Packets} packets, {rec.Gaps} gaps, {rec.BadStamps} without a timestamp, device clock against QPC within {rec.ClockSpreadMs:F1} ms")));
 
         // Reported position minus heard position, sampled every ~5 ms (plus the timer's resolution).
         var inside = positions.Where(p => p.At > rec.TimeOf(onset) + 0.3 && p.At < rec.TimeOf(offset) - 0.3).ToList();
-        var outputErrors = inside.Select(p => (p.Output - HeardAt(rec, heard, p.At)) * 1000).Where(double.IsFinite).ToList();
-        var readerErrors = inside.Select(p => (p.Reader - HeardAt(rec, heard, p.At)) * 1000).Where(double.IsFinite).ToList();
+        var outputErrors = inside.Select(p => (p.Output - heard.FileSecondsAt(p.At)) * 1000).Where(double.IsFinite).ToList();
+        var readerErrors = inside.Select(p => (p.Reader - heard.FileSecondsAt(p.At)) * 1000).Where(double.IsFinite).ToList();
         var (outputOffset, outputResidual) = Residual(outputErrors);
         var (readerOffset, readerResidual) = Residual(readerErrors);
         figures.Add(new($"{label}: output position − heard", Describe(outputOffset, outputResidual)));
@@ -365,26 +345,6 @@ public sealed class AudioTests(IReadOnlyList<string> files, Metrics metrics, Act
             $"working set +{added:F1} MB over idle ({idleMb:F0} MB, after full GC), CPU avg {playing.CpuAvgPercent:F1}% max {playing.CpuMaxPercent:F1}%")));
 
         return new PlaybackRun(combo, outputResidual, outputOffset, readerResidual, readerOffset, lastHeardMs, added, figures);
-    }
-
-    /// <summary>The file time heard at AudioClock time <paramref name="at"/>: the nearest heard window, run on at 1×.</summary>
-    private static double HeardAt(Recording rec, List<Heard> heard, double at)
-    {
-        if (heard.Count == 0)
-            return double.NaN;
-        var index = rec.IndexAt(at);
-        var lo = 0;
-        var hi = heard.Count - 1;
-        while (lo < hi)
-        {
-            var mid = (lo + hi + 1) / 2;
-            if (heard[mid].Index <= index)
-                lo = mid;
-            else
-                hi = mid - 1;
-        }
-        var h = heard[lo];
-        return h.FileSeconds + Reference.ToSeconds(index - h.Index);
     }
 
     /// <summary>The mean (the latency offset to subtract) and what's left after subtracting it.</summary>

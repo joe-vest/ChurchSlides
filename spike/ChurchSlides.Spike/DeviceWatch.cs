@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Windows.Threading;
 using NAudio.CoreAudioApi;
 
 namespace ChurchSlides.Spike;
@@ -7,12 +8,13 @@ namespace ChurchSlides.Spike;
 public sealed record DeviceEvent(string Text, bool DefaultOutputChanged);
 
 /// <summary>
-/// Logs every default-device and device-state notification (C0.4 decision 6). NAudio 3.x posts
-/// them to the synchronization context it was created on, so create this on the UI thread.
+/// Logs every default-device and device-state notification (C0.4 decision 6). Create it on the
+/// UI thread: <see cref="Changed"/> is raised on that thread's dispatcher.
 /// </summary>
 public sealed class DeviceWatch : IDisposable
 {
     private readonly MMDeviceEnumerator enumerator = new();
+    private readonly Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
     private readonly MMDeviceNotificationClient client;
 
     public DeviceWatch()
@@ -62,5 +64,10 @@ public sealed class DeviceWatch : IDisposable
         }
     }
 
-    private void Raise(string text, bool defaultOutput) => Changed?.Invoke(new DeviceEvent(text, defaultOutput));
+    /// <summary>
+    /// Posted to the dispatcher explicitly: the panel is built before Application.Run installs the
+    /// synchronization context, so NAudio raises these on a thread-pool thread (seen in C0.4b).
+    /// </summary>
+    private void Raise(string text, bool defaultOutput) =>
+        dispatcher.BeginInvoke(() => Changed?.Invoke(new DeviceEvent(text, defaultOutput)));
 }

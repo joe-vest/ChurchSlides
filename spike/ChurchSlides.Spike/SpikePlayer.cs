@@ -63,10 +63,16 @@ public sealed class SpikePlayer : IDisposable
 
     /// <param name="followDefault">WasapiPlayer only: follow the default device with Windows stream routing.</param>
     public SpikePlayer(string path, AudioCombo combo, bool followDefault = false)
+        : this(AudioFiles.Open(path, combo.Reader), combo, followDefault)
+    {
+    }
+
+    /// <summary>Plays any stream (the Sync check's click track); the combo's reader is then only a label.</summary>
+    public SpikePlayer(WaveStream reader, AudioCombo combo, bool followDefault = false)
     {
         Combo = combo;
         FollowDefault = followDefault && combo.Output != OutputKind.WaveOut100;
-        reader = AudioFiles.Open(path, combo.Reader);
+        this.reader = reader;
         samples = reader.ToSampleProvider();
         feed = new SwitchableProvider(samples.WaveFormat);
         output = CreateOutput();

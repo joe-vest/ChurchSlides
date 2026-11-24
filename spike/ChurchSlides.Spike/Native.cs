@@ -118,6 +118,13 @@ internal static class Native
     [DllImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool GlobalMemoryStatusEx(ref MEMORYSTATUSEX status);
+
+    /// <summary>Asks Windows for a finer timer resolution (in ms) for this process (C0.4 decision 5). Pair with <see cref="timeEndPeriod"/>.</summary>
+    [DllImport("winmm.dll")]
+    public static extern uint timeBeginPeriod(uint periodMs);
+
+    [DllImport("winmm.dll")]
+    public static extern uint timeEndPeriod(uint periodMs);
 }
 
 /// <summary>A rectangle in physical screen pixels.</summary>

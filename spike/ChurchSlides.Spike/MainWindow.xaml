@@ -113,6 +113,8 @@
 
       <TabItem x:Name="AudioTab" Header="Audio (S4)" />
 
+      <TabItem x:Name="TimerTab" Header="Timer (S5)" />
+
       <TabItem Header="Memory (S6)">
         <ScrollViewer VerticalScrollBarVisibility="Auto">
           <StackPanel Margin="8">

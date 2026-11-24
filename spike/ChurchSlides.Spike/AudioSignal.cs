@@ -48,6 +48,96 @@ public sealed class MonoDownsampler
     }
 }
 
+/// <summary>
+/// The file time heard at each moment of a loopback recording: a 0.5 s window every 0.25 s,
+/// each matched against the reference near where the one before says it should be (a wide
+/// search can land on a repeat in the music). Shared by the playback (C0.4a) and Cue (C0.4b) runs.
+/// </summary>
+public sealed class HeardTimeline
+{
+    private const double HopSeconds = 0.25;
+
+    private readonly Recording rec;
+    private readonly List<(int Index, double FileSeconds)> points;
+
+    private HeardTimeline(Recording rec, List<(int, double)> points, int windows, int steps)
+    {
+        this.rec = rec;
+        this.points = points;
+        Windows = windows;
+        Steps = steps;
+    }
+
+    /// <summary>Windows tried.</summary>
+    public int Windows { get; }
+
+    /// <summary>Windows matched.</summary>
+    public int Count => points.Count;
+
+    /// <summary>Matches more than 5 ms from where the one before said (dropouts or glitches).</summary>
+    public int Steps { get; }
+
+    /// <summary>Builds the timeline over recording samples [onset, offset), starting at file time <paramref name="startFileSeconds"/>.</summary>
+    public static HeardTimeline Build(Recording rec, Reference reference, int onset, int offset, double startFileSeconds, int window)
+    {
+        var points = new List<(int, double)>();
+        var steps = 0;
+        var windows = 0;
+        var expected = startFileSeconds;
+        var prev = onset;
+        for (var i = onset; i + window <= offset; i += Reference.Index(HopSeconds))
+        {
+            windows++;
+            var guess = expected + Reference.ToSeconds(i - prev);
+            var m = Correlation.Find(rec.Samples.AsSpan(i, window), reference.Samples, Reference.Index(guess - 0.1), Reference.Index(guess + 0.1));
+            if (!m.IsTrusted)
+                continue;
+            var at = Reference.ToSeconds(m.Index);
+            if (points.Count > 0 && Math.Abs(at - guess) > 0.005)
+                steps++;
+            points.Add((i, at));
+            expected = at;
+            prev = i;
+        }
+        return new HeardTimeline(rec, points, windows, steps);
+    }
+
+    /// <summary>The file time heard at AudioClock time <paramref name="clockSeconds"/>: the nearest window before it, run on at 1×.</summary>
+    public double FileSecondsAt(double clockSeconds)
+    {
+        if (points.Count == 0)
+            return double.NaN;
+        var index = rec.IndexAt(clockSeconds);
+        var (i, file) = points[Last(p => p.Index <= index)];
+        return file + Reference.ToSeconds(index - i);
+    }
+
+    /// <summary>The AudioClock time at which file time <paramref name="fileSeconds"/> was heard (the inverse of <see cref="FileSecondsAt"/>).</summary>
+    public double ClockSecondsOf(double fileSeconds)
+    {
+        if (points.Count == 0)
+            return double.NaN;
+        var (i, file) = points[Last(p => p.FileSeconds <= fileSeconds)];
+        return rec.TimeOf(i + (fileSeconds - file) * MonoDownsampler.Rate);
+    }
+
+    /// <summary>The last point that passes (points are in order on both axes), or the first if none does.</summary>
+    private int Last(Func<(int Index, double FileSeconds), bool> atOrBefore)
+    {
+        var lo = 0;
+        var hi = points.Count - 1;
+        while (lo < hi)
+        {
+            var mid = (lo + hi + 1) / 2;
+            if (atOrBefore(points[mid]))
+                lo = mid;
+            else
+                hi = mid - 1;
+        }
+        return lo;
+    }
+}
+
 /// <summary>A match of a probe inside a longer signal: where it starts (fractional sample) and how well it matches (0..1).</summary>
 public readonly record struct Match(double Index, double Score)
 {

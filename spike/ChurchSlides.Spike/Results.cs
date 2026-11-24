@@ -39,13 +39,15 @@ public sealed class Results
     public const string S2 = "S2 Slides and crossfade";
     public const string S3 = "S3 Rich text";
     public const string S4 = "S4 Audio";
+    public const string S4Cues = "S4 Cues";
     public const string S4Devices = "S4 Device log";
+    public const string S5 = "S5 Timer";
     public const string S6 = "S6 Memory and decode";
     public const string S7 = "S7 Startup";
     public const string S8 = "S8 System";
 
     /// <summary>Section order in the results file. Later chunks add their sections here.</summary>
-    public static readonly string[] SectionOrder = [S8, S1, S2, S3, S4, S4Devices, S6, S7];
+    public static readonly string[] SectionOrder = [S8, S1, S2, S3, S4, S4Cues, S4Devices, S5, S6, S7];
 
     public static readonly CheckItem[] Checklist =
     [
@@ -66,8 +68,15 @@ public sealed class Results
         new("S3-4", S3, "Typing in the 200-word sample (or any long box) feels immediate on this PC."),
         new("S3-5", S3, "Drag this window to the Output monitor. With Flick, editor and renderer look the same on the projector."),
         new("S3-6", S3, "Ctrl+Z and Ctrl+Y undo and redo typing and formatting, and the caret goes back to where it was."),
-        new("S4-4", S4, "Audio tab: play a song, then change the default device in Windows Sound settings (or plug in headphones). Say what happened, and whether Resume on the new default device worked (the log shows it)."),
+        new("S4-1", S4, "Audio tab: a song plays cleanly with the output the automatic run found best, with no crackle while slides change (play it, then step through slides on the Slides tab)."),
+        new("S4-2", S4, "Audio tab, Sync: the white flash on the Output and the click are together."),
+        new("S4-3", S4, "Audio tab, Tap: on play back, the Output changes where you tapped."),
+        new("S4-4", S4,"Audio tab: play a song, then change the default device in Windows Sound settings (or plug in headphones). Say what happened, and whether Resume on the new default device worked (the log shows it)."),
         new("S4-5", S4, "Audio tab: clicking the position bar seeks and plays with no noticeable delay, with the output that the automatic run found best."),
+        new("S5-1", S5, "Timer tab: while the timer runs, no flicker on the Output monitor or the projector."),
+        new("S5-2", S5, "The digits don't move the text beside them, and the timer itself doesn't jiggle as digits change."),
+        new("S5-3", S5, "The color changes to red at the warning threshold, and a minus sign shows once it goes past zero."),
+        new("S5-4", S5, "The timer stays readable during the crossfades in the second half."),
         new("S7-1", S7, "Startup time is acceptable (see the Startup tab for cold and warm figures)."),
     ];
 

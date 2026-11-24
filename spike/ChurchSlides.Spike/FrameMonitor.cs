@@ -28,6 +28,37 @@ public readonly record struct FrameStats(int Frames, int Dropped, double MaxInte
 }
 
 /// <summary>
+/// One-off frame waits for the Cue (S4) and Timer (S5) runs: subscribes to CompositionTarget.Rendering
+/// only until the frame comes, so WPF isn't made to draw every frame the rest of the time.
+/// </summary>
+public static class NextFrame
+{
+    /// <summary>
+    /// Completes at the n-th new frame from now with <paramref name="clock"/>'s time. Rendering fires
+    /// just before a frame is drawn, so n = 2 is the frame after the one with the change: an upper
+    /// bound for "on screen", as S2 uses.
+    /// </summary>
+    public static Task<double> After(int n, Func<double> clock)
+    {
+        var done = new TaskCompletionSource<double>();
+        var last = TimeSpan.MinValue;
+        void OnRendering(object? sender, EventArgs e)
+        {
+            var time = ((RenderingEventArgs)e).RenderingTime;
+            if (time == last)
+                return; // the same frame again
+            last = time;
+            if (--n > 0)
+                return;
+            CompositionTarget.Rendering -= OnRendering;
+            done.TrySetResult(clock());
+        }
+        CompositionTarget.Rendering += OnRendering;
+        return done.Task;
+    }
+}
+
+/// <summary>
 /// Frame timestamps from CompositionTarget.Rendering, on only during a transition (while on,
 /// WPF draws every frame). WPF ticks animations on the UI thread just before this event, so a
 /// late event means a late animation frame.
